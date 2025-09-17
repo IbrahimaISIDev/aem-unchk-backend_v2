@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import * as cookieParser from 'cookie-parser'; // ✅ correction ici
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -20,7 +20,7 @@ async function bootstrap() {
 
   // Middleware de sécurité
   app.use(helmet());
-  app.use(cookieParser());
+  app.use(cookieParser()); // ✅ maintenant fonctionnera
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
