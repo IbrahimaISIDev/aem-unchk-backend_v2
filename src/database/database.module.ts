@@ -7,10 +7,13 @@ import { dataSourceOptions } from './data-source';
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        ...dataSourceOptions(configService),
-        autoLoadEntities: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const options = dataSourceOptions(configService); // appel comme fonction
+        return {
+          ...options,
+          autoLoadEntities: true,
+        };
+      },
       inject: [ConfigService],
     }),
   ],
