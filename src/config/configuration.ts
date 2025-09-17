@@ -1,0 +1,68 @@
+// src/config/configuration.ts
+export default () => ({
+  port: parseInt(process.env.PORT || '3000', 10),
+  nodeEnv: process.env.NODE_ENV || 'production',
+  apiPrefix: process.env.API_PREFIX || 'api',
+  corsOrigin: process.env.CORS_ORIGIN || 'https://aem-unchk-connect.vercel.app',
+
+  database: {
+    host: process.env.DATABASE_HOST,
+    port: parseInt(process.env.DATABASE_PORT || '5432', 10),
+    name: process.env.DATABASE_NAME,
+    username: process.env.DATABASE_USERNAME,
+    password: process.env.DATABASE_PASSWORD,
+    synchronize: process.env.DATABASE_SYNCHRONIZE === 'false',
+    logging: process.env.DATABASE_LOGGING === 'true',
+    ssl: {
+      rejectUnauthorized: false, // requis pour Neon
+    },
+  },
+
+  jwt: {
+    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key',
+    expiresIn: process.env.JWT_EXPIRATION || '1h',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-super-refresh-secret',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
+  },
+
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || '',
+  },
+
+  upload: {
+    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10), // 10MB
+    uploadDir: process.env.UPLOAD_DIR || './uploads',
+  },
+
+  email: {
+    host: process.env.SMTP_HOST || 'localhost',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'noreply@islamic-platform.com',
+  },
+
+  throttle: {
+    ttl: parseInt(process.env.THROTTLE_TTL || '60', 10),
+    limit: parseInt(process.env.THROTTLE_LIMIT || '10', 10),
+  },
+
+  security: {
+    bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
+  },
+
+  logging: {
+    level: process.env.LOG_LEVEL || 'info',
+  },
+
+  externalApis: {
+    aladhan: {
+      baseUrl: process.env.ALADHAN_API_URL || 'https://api.aladhan.com/v1',
+    },
+    islamicCalendar: {
+      baseUrl: process.env.ISLAMIC_CALENDAR_API_URL || 'https://api.islamicfinder.us/v1',
+    },
+  },
+});
