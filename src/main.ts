@@ -18,7 +18,6 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port') || 3000;
-  const corsOrigin = configService.get<string>('corsOrigin') || '*';
   const apiPrefix = configService.get<string>('apiPrefix') || 'api';
 
   // Middleware de sécurité
@@ -27,9 +26,21 @@ async function bootstrap() {
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
-  // CORS
+  // --- CORS avec plusieurs origines ---
+  const allowedOrigins = [
+    'https://aem-unchk-connect.vercel.app', // ton frontend en prod
+    'http://localhost:3000',               // pour tests backend local
+    'http://localhost:5173',               // pour tests frontend Vite
+  ];
+
   app.enableCors({
-    origin: corsOrigin,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`❌ Origin ${origin} not allowed by CORS`), false);
+      }
+    },
     credentials: true,
   });
 
@@ -45,13 +56,13 @@ async function bootstrap() {
     .setTitle('Islamic Platform API')
     .setDescription('Documentation de l’API de la plateforme communautaire islamique')
     .setVersion('1.0')
-    .addBearerAuth() // JWT Auth si tu en utilises
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
-      persistAuthorization: true, // garde le token après refresh
+      persistAuthorization: true,
     },
   });
 
@@ -60,7 +71,7 @@ async function bootstrap() {
   console.log(`🚀 AEM_UNCHK API running on port ${port}`);
   console.log(`📚 Documentation available at http://localhost:${port}/docs`);
   console.log(`🌍 Environment: ${configService.get<string>('nodeEnv')}`);
-  console.log(`🔗 CORS enabled for origins: ${corsOrigin}`);
+  console.log(`🔗 CORS enabled for origins: ${allowedOrigins.join(', ')}`);
   console.log(`✅ SSE endpoint available at http://localhost:${port}/${apiPrefix}/announcements/stream`);
 }
 
