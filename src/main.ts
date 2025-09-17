@@ -1,3 +1,4 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
@@ -12,9 +13,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('port');
-  const corsOrigin = configService.get<string>('corsOrigin');
-  const apiPrefix = configService.get<string>('apiPrefix');
+  const port = parseInt(process.env.PORT || configService.get<number>('port')?.toString() || '3000', 10);
+  const corsOrigin = configService.get<string>('corsOrigin') || '*';
+  const apiPrefix = configService.get<string>('apiPrefix') || 'api';
 
   // Middleware de sécurité
   app.use(helmet());
