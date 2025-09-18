@@ -28,9 +28,10 @@ async function bootstrap() {
 
   // --- CORS avec plusieurs origines ---
   const allowedOrigins = [
-    'https://aem-unchk-connect.vercel.app', // ton frontend en prod
-    'http://localhost:3000',               // pour tests backend local
-    'http://localhost:5173',               // pour tests frontend Vite
+    'https://aem-unchk-connect.vercel.app', // frontend en prod
+    'https://aem-unchk-backend-v2.onrender.com', // backend Render (⚠️ ajouté ici)
+    'http://localhost:3000',               // backend local
+    'http://localhost:5173',               // frontend Vite local
   ];
 
   app.enableCors({
