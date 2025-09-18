@@ -1,4 +1,4 @@
-// auth/auth.controller.ts - VERSION CORRIGÉE
+// src/auth/auth.controller.ts - VERSION FUSIONNÉE
 import {
   Controller,
   Post,
@@ -32,43 +32,17 @@ import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    // ❌ SUPPRIMER CETTE LIGNE qui cause l'erreur :
-    // private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
-  // Dans auth.controller.ts - Modifiez temporairement la méthode login
-@Public()
-@Post('login')
-@HttpCode(HttpStatus.OK)
-async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-  console.log('🔄 AuthController.login - Début');
-  
-  try {
-    const result = await this.authService.login(loginDto);
-    
-    console.log('✅ AuthService.login terminé avec succès');
-    console.log('📤 DEBUG - Réponse complète à retourner:', JSON.stringify(result, null, 2));
-    console.log('📤 DEBUG - Structure de la réponse:', {
-      has_user: !!result.user,
-      has_access_token: !!result.access_token,
-      has_token: !!result.token,
-      has_refreshToken: !!result.refreshToken,
-      access_token_length: result.access_token?.length,
-      token_length: result.token?.length,
-      user_id: result.user?.id,
-      user_email: result.user?.email,
-    });
-
-    return result;
-  } catch (error) {
-    console.error('❌ Erreur dans AuthController.login:', error);
-    throw error;
-  }
-}
+  // 🔑 Connexion
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Connexion utilisateur',
+    description: 'Authentifie un utilisateur avec email/téléphone et mot de passe',
+  })
   @ApiBody({
     type: LoginDto,
     description: 'Identifiants de connexion',
@@ -86,10 +60,33 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     status: 429,
     description: 'Trop de tentatives de connexion',
   })
-  // async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-  //   return this.authService.login(loginDto);
-  // }
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+    console.log('🔄 AuthController.login - Début');
+    
+    try {
+      const result = await this.authService.login(loginDto);
+      
+      console.log('✅ AuthService.login terminé avec succès');
+      console.log('📤 DEBUG - Réponse complète à retourner:', JSON.stringify(result, null, 2));
+      console.log('📤 DEBUG - Structure de la réponse:', {
+        has_user: !!result.user,
+        has_access_token: !!result.access_token,
+        has_token: !!result.token,
+        has_refreshToken: !!result.refreshToken,
+        access_token_length: result.access_token?.length,
+        token_length: result.token?.length,
+        user_id: result.user?.id,
+        user_email: result.user?.email,
+      });
 
+      return result;
+    } catch (error) {
+      console.error('❌ Erreur dans AuthController.login:', error);
+      throw error;
+    }
+  }
+
+  // 📝 Inscription
   @Public()
   @Post('register')
   @ApiOperation({
@@ -117,11 +114,12 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.register(registerDto);
   }
 
+  // 👤 Profil
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Profil utilisateur',
+    summary: 'Profil utilisateur connecté',
     description: 'Récupère le profil de l\'utilisateur connecté',
   })
   @ApiResponse({
@@ -137,6 +135,7 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.getProfile(user.id);
   }
 
+  // ✏️ Mise à jour du profil
   @Put('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -149,14 +148,18 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     description: 'Profil mis à jour avec succès',
     type: User,
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Token d\'authentification requis',
+  })
   async updateProfile(
     @CurrentUser() user: User,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<User> {
-    // ✅ CHANGEMENT : Utiliser authService au lieu de usersService
     return this.authService.updateProfile(user.id, updateProfileDto);
   }
 
+  // 🔑 Changer mot de passe
   @Patch('change-password')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -179,7 +182,7 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
   })
   @ApiResponse({
     status: 401,
-    description: 'Ancien mot de passe incorrect',
+    description: 'Ancien mot de passe incorrect ou token invalide',
   })
   async changePassword(
     @CurrentUser() user: User,
@@ -188,6 +191,7 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.changePassword(user.id, changePasswordDto);
   }
 
+  // 🔑 Alias POST pour changer mot de passe
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -198,6 +202,11 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
   })
   @ApiBody({
     type: ChangePasswordDto,
+    description: 'Ancien et nouveau mot de passe',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Mot de passe changé avec succès',
   })
   async changePasswordPost(
     @CurrentUser() user: User,
@@ -206,11 +215,12 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.changePassword(user.id, changePasswordDto);
   }
 
+  // 📩 Mot de passe oublié
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Mot de passe oublié',
+    summary: 'Demande de réinitialisation du mot de passe',
     description: 'Envoie un email de réinitialisation de mot de passe',
   })
   @ApiBody({
@@ -227,17 +237,22 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
       },
     },
   })
+  @ApiResponse({
+    status: 404,
+    description: 'Email non trouvé',
+  })
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ message: string }> {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
 
+  // 🔄 Réinitialisation
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Réinitialiser mot de passe',
+    summary: 'Réinitialiser mot de passe avec token',
     description: 'Réinitialise le mot de passe avec un token de réinitialisation',
   })
   @ApiBody({
@@ -264,6 +279,7 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.resetPassword(resetPasswordDto);
   }
 
+  // 🔁 Refresh Token
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -299,7 +315,7 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
   })
   @ApiResponse({
     status: 401,
-    description: 'Refresh token invalide',
+    description: 'Refresh token invalide ou expiré',
   })
   async refresh(
     @Body('refreshToken') refreshToken: string,
@@ -307,12 +323,13 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.refreshToken(refreshToken);
   }
 
+  // 🚪 Déconnexion
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Déconnexion',
+    summary: 'Déconnexion utilisateur',
     description: 'Déconnecte l\'utilisateur (côté client uniquement)',
   })
   @ApiResponse({
@@ -324,6 +341,10 @@ async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
         message: { type: 'string', example: 'Déconnexion réussie' },
       },
     },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token d\'authentification requis',
   })
   async logout(): Promise<{ message: string }> {
     // La déconnexion côté serveur pourrait impliquer l'invalidation du token
