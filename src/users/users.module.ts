@@ -5,11 +5,14 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { User } from './entities/user.entity';
 import { Activity } from '../events/entities/activity.entity';
+import { EmailModule } from '../email/email.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Activity]),
-    // Suppression de AuthModule pour éviter la dépendance circulaire
+    EmailModule,
+    NotificationsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

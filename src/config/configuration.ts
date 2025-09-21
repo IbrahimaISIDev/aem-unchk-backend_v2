@@ -37,11 +37,19 @@ export default () => ({
   },
 
   email: {
-    host: process.env.SMTP_HOST || 'localhost',
+    host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'noreply@islamic-platform.com',
+  },
+
+  admin: {
+    email: process.env.ADMIN_NOTIFICATION_EMAIL || '',
+  },
+
+  frontend: {
+    url: process.env.FRONTEND_URL || 'https://aem-unchk-connect.vercel.app',
   },
 
   throttle: {
@@ -64,5 +72,18 @@ export default () => ({
     islamicCalendar: {
       baseUrl: process.env.ISLAMIC_CALENDAR_API_URL || 'https://api.islamicfinder.us/v1',
     },
+  },
+
+  finance: {
+    enabled: (process.env.FINANCE_MODULE_ENABLED || 'true') === 'true',
+    exportMaxRecords: parseInt(process.env.FINANCE_EXPORT_MAX_RECORDS || '10000', 10),
+    backupEnabled: (process.env.FINANCE_BACKUP_ENABLED || 'true') === 'true',
+    notificationEmail: process.env.FINANCE_NOTIFICATION_EMAIL || '',
+    contributionReminderDays: parseInt(process.env.CONTRIBUTION_REMINDER_DAYS || '7', 10),
+    defaultContributionAmount: parseFloat(process.env.CONTRIBUTION_DEFAULT_AMOUNT || '50'),
+    exportTempDir: process.env.EXPORT_TEMP_DIR || '/tmp/exports',
+    exportMaxFileSize: process.env.EXPORT_MAX_FILE_SIZE || '10MB',
+    analyticsCacheTtl: parseInt(process.env.ANALYTICS_CACHE_TTL || '300', 10),
+    analyticsBatchSize: parseInt(process.env.ANALYTICS_BATCH_SIZE || '1000', 10),
   },
 });

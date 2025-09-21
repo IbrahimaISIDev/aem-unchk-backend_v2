@@ -11,10 +11,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { EmailModule } from '../email/email.module';
+import { Eno } from '../academics/entities/eno.entity';
+import { Pole } from '../academics/entities/pole.entity';
+import { Filiere } from '../academics/entities/filiere.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Eno, Pole, Filiere]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -26,6 +31,8 @@ import { RolesGuard } from './guards/roles.guard';
       }),
       inject: [ConfigService],
     }),
+    NotificationsModule,
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [

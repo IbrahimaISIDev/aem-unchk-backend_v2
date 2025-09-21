@@ -21,6 +21,12 @@ import { Review } from '../marketplace/entities/review.entity';
 import { Cart } from '../marketplace/entities/cart.entity';
 import { CartItem } from '../marketplace/entities/cart-item.entity';
 import { Announcement } from '../announcements/entities/announcement.entity';
+import { Transaction } from '../finance/entities/transaction.entity';
+import { MemberContribution } from '../contributions/entities/member-contribution.entity';
+import { ExpenseCategory } from '../finance/entities/expense-category.entity';
+import { Eno } from '../academics/entities/eno.entity';
+import { Pole } from '../academics/entities/pole.entity';
+import { Filiere } from '../academics/entities/filiere.entity';
 
 // Fonction qui retourne les options TypeORM
 export const dataSourceOptions = (configService?: ConfigService): DataSourceOptions => {
@@ -67,6 +73,12 @@ export const dataSourceOptions = (configService?: ConfigService): DataSourceOpti
       Cart,
       CartItem,
       Announcement,
+      Transaction,
+      ExpenseCategory,
+      MemberContribution,
+      Eno,
+      Pole,
+      Filiere,
     ],
 
     migrations: ['src/database/migrations/*.ts'],

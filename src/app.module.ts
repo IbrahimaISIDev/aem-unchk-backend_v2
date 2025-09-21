@@ -20,6 +20,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { PrayerModule } from './prayer/prayer.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { FinanceModule } from './finance/finance.module';
+import { ContributionsModule } from './contributions/contributions.module';
+import { MarketplaceAnalyticsModule } from './marketplace-analytics/marketplace-analytics.module';
+import { AcademicsModule } from './academics/academics.module';
 import { HealthController } from './common/controllers/health.controller';
 import configuration from './config/configuration';
 
@@ -89,6 +93,10 @@ import configuration from './config/configuration';
     PrayerModule,
     MarketplaceModule,
     AnnouncementsModule,
+    FinanceModule,
+    ContributionsModule,
+    MarketplaceAnalyticsModule,
+    AcademicsModule,
   ],
   controllers: [HealthController],
   providers: [],

@@ -11,6 +11,7 @@ import {
   MinLength,
   IsOptional,
   IsNumberString,
+  IsUUID,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -127,4 +128,16 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   motivation?: string;
+
+  @ApiProperty({ description: 'ID de l\'ENO' })
+  @IsUUID()
+  enoId: string;
+
+  @ApiProperty({ description: 'ID du Pôle' })
+  @IsUUID()
+  poleId: string;
+
+  @ApiProperty({ description: 'ID de la Filière (appartenant au pôle)' })
+  @IsUUID()
+  filiereId: string;
 }

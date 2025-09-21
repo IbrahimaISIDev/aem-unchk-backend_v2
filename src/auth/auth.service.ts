@@ -18,14 +18,28 @@ import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../email/email.service';
+import { NotificationPriority, NotificationType } from '../notifications/entities/notification.entity';
+import { Eno } from '../academics/entities/eno.entity';
+import { Pole } from '../academics/entities/pole.entity';
+import { Filiere } from '../academics/entities/filiere.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Eno)
+    private enosRepository: Repository<Eno>,
+    @InjectRepository(Pole)
+    private polesRepository: Repository<Pole>,
+    @InjectRepository(Filiere)
+    private filieresRepository: Repository<Filiere>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private notifications: NotificationsService,
+    private mail: MailService,
   ) {}
 
   // 🔎 Validation utilisateur avec logs détaillés
@@ -105,7 +119,14 @@ export class AuthService {
       annee_promotion,
       niveau,
       motivation,
+      enoId,
+      poleId,
+      filiereId,
     } = registerDto;
+
+    if (!enoId || !poleId || !filiereId) {
+      throw new BadRequestException("Les champs ENO, Pôle et Filière sont requis");
+    }
 
     // Vérifier que les mots de passe correspondent
     if (password !== confirmer_mot_de_passe) {
@@ -134,24 +155,36 @@ export class AuthService {
         throw new ConflictException('Ce numéro de téléphone est déjà utilisé');
       }
 
-      // Créer le nouvel utilisateur
+      let enoRecord: Eno | null = null;
+      let poleRecord: Pole | null = null;
+      let filiereRecord: Filiere | null = null;
+      if (enoId) enoRecord = await this.enosRepository.findOne({ where: { id: enoId } });
+      if (poleId) poleRecord = await this.polesRepository.findOne({ where: { id: poleId } });
+      if (filiereId) filiereRecord = await this.filieresRepository.findOne({ where: { id: filiereId } });
+      if (filiereRecord && poleRecord && filiereRecord.poleId !== poleRecord.id) {
+        throw new BadRequestException('La filière sélectionnée n\'appartient pas au pôle choisi');
+      }
+
       console.log('🔄 Création utilisateur...');
       const user = this.usersRepository.create({
         nom,
         prenom,
         email,
-        password, // Sera haché automatiquement par @BeforeInsert
+        password,
         telephone,
         adresse,
         ville,
-        universite,
-        eno_rattachement,
-        filiere,
+        universite: 'Université Numérique Cheikh Hamidou Kane',
+        eno_rattachement: enoRecord?.name || eno_rattachement,
+        filiere: filiereRecord?.name || filiere,
         annee_promotion,
         niveau,
         motivation,
-        role: UserRole.MEMBER, // Par défaut MEMBER
-        status: UserStatus.PENDING, // En attente par défaut
+        enoId: enoRecord?.id,
+        poleId: poleRecord?.id,
+        filiereId: filiereRecord?.id,
+        role: UserRole.MEMBER,
+        status: UserStatus.PENDING,
         isActive: true,
         date_inscription: new Date(),
       });
@@ -159,7 +192,30 @@ export class AuthService {
       const savedUser = await this.usersRepository.save(user);
       console.log('✅ Utilisateur créé avec ID:', savedUser.id);
 
-      // Générer les tokens
+      // Notifier les admins via in-app notification et email (si configuré)
+      const admins = await this.usersRepository.find({ where: { role: UserRole.ADMIN } });
+      const adminEmails = admins.map((a) => a.email).filter(Boolean);
+      await Promise.all(
+        admins.map((a) =>
+          this.notifications.create({
+            userId: a.id,
+            title: 'Nouvelle inscription en attente',
+            message: `${savedUser.nom} ${savedUser.prenom} a créé un compte. Statut: EN ATTENTE`,
+            type: NotificationType.INFO,
+            priority: NotificationPriority.HIGH,
+          }),
+        ),
+      );
+      if (adminEmails.length) {
+        await this.mail.send(
+          adminEmails,
+          'Nouvelle inscription en attente',
+          `${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.`,
+          `<p><strong>Nouvelle inscription</strong></p><p>${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.</p>`,
+        );
+      }
+
+      // Générer les tokens (retournés mais le front gère le statut pending)
       const tokens = await this.generateTokens(savedUser);
 
       return {
@@ -267,6 +323,10 @@ export class AuthService {
       if (existingUserByPhone) {
         throw new ConflictException('Ce numéro de téléphone est déjà utilisé');
       }
+    }
+
+    if (typeof updateProfileDto.universite !== 'undefined') {
+      delete (updateProfileDto as any).universite;
     }
 
     // Mettre à jour les champs autorisés

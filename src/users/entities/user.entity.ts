@@ -9,6 +9,8 @@ import {
   Index,
   BeforeInsert,
   BeforeUpdate,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
 import { Exclude } from "class-transformer";
 import * as bcrypt from "bcryptjs";
@@ -20,6 +22,9 @@ import { UserSession } from "../../analytics/entities/user-session.entity";
 import { Order } from "../../marketplace/entities/order.entity";
 import { Review } from "../../marketplace/entities/review.entity";
 import { Cart } from "../../marketplace/entities/cart.entity";
+import { Eno } from "../../academics/entities/eno.entity";
+import { Pole } from "../../academics/entities/pole.entity";
+import { Filiere } from "../../academics/entities/filiere.entity";
 
 export enum UserRole {
   VISITOR = "visitor",
@@ -27,6 +32,8 @@ export enum UserRole {
   ADMIN = "admin",
   SCHOLAR = "scholar",
   IMAM = "imam",
+  FINANCE_MANAGER = "finance_manager",
+  TREASURER = "treasurer",
 }
 
 export enum UserStatus {
@@ -128,6 +135,27 @@ export class User {
 
   @Column({ nullable: true })
   phoneVerifiedAt?: Date;
+
+  @Column({ type: "uuid", nullable: true })
+  enoId?: string;
+
+  @ManyToOne(() => Eno, (eno) => eno.users, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'enoId' })
+  eno?: Eno;
+
+  @Column({ type: "uuid", nullable: true })
+  poleId?: string;
+
+  @ManyToOne(() => Pole, (pole) => pole.users, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'poleId' })
+  pole?: Pole;
+
+  @Column({ type: "uuid", nullable: true })
+  filiereId?: string;
+
+  @ManyToOne(() => Filiere, (filiere) => filiere.users, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'filiereId' })
+  filiereRef?: Filiere;
 
   @CreateDateColumn()
   date_inscription: Date;

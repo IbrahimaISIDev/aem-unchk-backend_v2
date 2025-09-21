@@ -12,6 +12,10 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AddPointsDto, UserPointsResponseDto } from './dto/user-points.dto';
 import { PaginationDto, PaginationResponseDto } from '../common/dto/pagination.dto';
+import { MailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { ConfigService } from '@nestjs/config';
+import { NotificationType, NotificationPriority } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class UsersService {
@@ -20,58 +24,78 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(Activity)
     private activitiesRepository: Repository<Activity>,
+    private readonly mail: MailService,
+    private readonly notifications: NotificationsService,
+    private readonly config: ConfigService,
   ) {}
 
-  async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto<User>> {
-    const { page, limit, skip } = paginationDto;
+async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto<User>> {
+  const { page, limit, skip } = paginationDto;
 
-    const qb = this.usersRepository
-      .createQueryBuilder('user')
-      .orderBy('user.createdAt', 'DESC')
-      .skip(skip)
-      .take(limit);
+  const qb = this.usersRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.eno', 'eno')
+    .leftJoinAndSelect('user.pole', 'pole') 
+    .leftJoinAndSelect('user.filiereRef', 'filiere')
+    .orderBy('user.createdAt', 'DESC')
+    .skip(skip)
+    .take(limit);
 
-    // Filtres
-    const {
-      search,
-      nom,
-      prenom,
-      email,
-      telephone,
-      universite,
-      eno_rattachement,
-      role,
-      status,
-      createdFrom,
-      createdTo,
-    } = paginationDto as any;
+  // Filtres existants
+  const {
+    search,
+    nom,
+    prenom,
+    email,
+    telephone,
+    universite,
+    eno_rattachement,
+    role,
+    status,
+    createdFrom,
+    createdTo,
+    // Nouveaux filtres académiques
+    enoId,
+    poleId,
+    filiereId,
+    poles, // Legacy filter for backward compatibility
+  } = paginationDto as any;
 
-    if (search) {
-      qb.andWhere(
-        '(user.nom ILIKE :q OR user.prenom ILIKE :q OR user.email ILIKE :q OR user.telephone ILIKE :q OR user.universite ILIKE :q OR user.eno_rattachement ILIKE :q)',
-        { q: `%${search}%` },
-      );
-    }
-    if (nom) qb.andWhere('user.nom ILIKE :nom', { nom: `%${nom}%` });
-    if (prenom) qb.andWhere('user.prenom ILIKE :prenom', { prenom: `%${prenom}%` });
-    if (email) qb.andWhere('user.email ILIKE :email', { email: `%${email}%` });
-    if (telephone) qb.andWhere('user.telephone ILIKE :telephone', { telephone: `%${telephone}%` });
-    if (universite) qb.andWhere('user.universite ILIKE :universite', { universite: `%${universite}%` });
-    if (eno_rattachement) qb.andWhere('user.eno_rattachement ILIKE :eno', { eno: `%${eno_rattachement}%` });
-    if (role) qb.andWhere('user.role = :role', { role });
-    if (status) qb.andWhere('user.status = :status', { status });
-    if (createdFrom && createdTo) {
-      qb.andWhere('user.createdAt BETWEEN :from AND :to', { from: new Date(createdFrom), to: new Date(createdTo) });
-    } else if (createdFrom) {
-      qb.andWhere('user.createdAt >= :from', { from: new Date(createdFrom) });
-    } else if (createdTo) {
-      qb.andWhere('user.createdAt <= :to', { to: new Date(createdTo) });
-    }
-
-    const [users, total] = await qb.getManyAndCount();
-
-    return new PaginationResponseDto(users, total, page, limit);
+  if (search) {
+    qb.andWhere(
+      '(user.nom ILIKE :q OR user.prenom ILIKE :q OR user.email ILIKE :q OR user.telephone ILIKE :q OR user.universite ILIKE :q OR user.eno_rattachement ILIKE :q OR eno.name ILIKE :q OR pole.name ILIKE :q OR filiere.name ILIKE :q)',
+      { q: `%${search}%` },
+    );
   }
+  if (nom) qb.andWhere('user.nom ILIKE :nom', { nom: `%${nom}%` });
+  if (prenom) qb.andWhere('user.prenom ILIKE :prenom', { prenom: `%${prenom}%` });
+  if (email) qb.andWhere('user.email ILIKE :email', { email: `%${email}%` });
+  if (telephone) qb.andWhere('user.telephone ILIKE :telephone', { telephone: `%${telephone}%` });
+  if (universite) qb.andWhere('user.universite ILIKE :universite', { universite: `%${universite}%` });
+  if (eno_rattachement) qb.andWhere('user.eno_rattachement ILIKE :eno', { eno: `%${eno_rattachement}%` });
+  
+  // Nouveaux filtres académiques par ID
+  if (enoId) qb.andWhere('user.enoId = :enoId', { enoId });
+  if (poleId) qb.andWhere('user.poleId = :poleId', { poleId });
+  if (filiereId) qb.andWhere('user.filiereId = :filiereId', { filiereId });
+  
+  // Filtre legacy par nom de pôle (pour compatibilité)
+  if (poles) qb.andWhere('(user.poles ILIKE :poles OR eno.name ILIKE :poles)', { poles: `%${poles}%` });
+  
+  if (role) qb.andWhere('user.role = :role', { role });
+  if (status) qb.andWhere('user.status = :status', { status });
+  if (createdFrom && createdTo) {
+    qb.andWhere('user.createdAt BETWEEN :from AND :to', { from: new Date(createdFrom), to: new Date(createdTo) });
+  } else if (createdFrom) {
+    qb.andWhere('user.createdAt >= :from', { from: new Date(createdFrom) });
+  } else if (createdTo) {
+    qb.andWhere('user.createdAt <= :to', { to: new Date(createdTo) });
+  }
+
+  const [users, total] = await qb.getManyAndCount();
+
+  return new PaginationResponseDto(users, total, page, limit);
+}
 
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({
@@ -175,9 +199,29 @@ export class UsersService {
     }
 
     const user = await this.findOne(id);
+    const prevStatus = user.status;
     user.status = status;
-    
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+
+    // Si activation, envoyer email à l'utilisateur + notif
+    if (prevStatus !== UserStatus.ACTIVE && status === UserStatus.ACTIVE) {
+      const appUrl = this.config.get<string>('frontend.url');
+      await this.mail.send(
+        user.email,
+        'Votre compte a été activé',
+        `Bonjour ${user.nom}, votre compte a été activé. Vous pouvez vous connecter: ${appUrl}`,
+        `<p>Bonjour ${user.nom},</p><p>Votre compte a été activé.</p><p><a href="${appUrl}">Se connecter</a></p>`,
+      );
+      await this.notifications.create({
+        userId: user.id,
+        title: 'Compte activé',
+        message: 'Votre compte a été activé. Vous pouvez maintenant vous connecter.',
+        type: NotificationType.SUCCESS,
+        priority: NotificationPriority.NORMAL,
+      });
+    }
+
+    return saved;
   }
 
   async addPoints(id: string, addPointsDto: AddPointsDto): Promise<UserPointsResponseDto> {

@@ -1,9 +1,12 @@
-// src/database/data-source.ts
+// src/data-source.ts
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { config } from 'dotenv';
+
+// Entities
 import { EventLog } from './analytics/entities/event-log.entity';
 import { UserSession } from './analytics/entities/user-session.entity';
 import { Announcement } from './announcements/entities/announcement.entity';
+import { Event } from './events/entities/event.entity';
 import { Activity } from './events/entities/activity.entity';
 import { CartItem } from './marketplace/entities/cart-item.entity';
 import { Cart } from './marketplace/entities/cart.entity';
@@ -13,15 +16,16 @@ import { Product } from './marketplace/entities/product.entity';
 import { Review } from './marketplace/entities/review.entity';
 import { Category } from './media/entities/category.entity';
 import { Media } from './media/entities/media.entity';
+import { Notification } from './notifications/entities/notification.entity';
 import { NotificationTemplate } from './notifications/entities/notification-template.entity';
 import { User } from './users/entities/user.entity';
+import { Transaction } from './finance/entities/transaction.entity';
+import { MemberContribution } from './contributions/entities/member-contribution.entity';
+import { ExpenseCategory } from './finance/entities/expense-category.entity';
 
-// Charge le fichier .env
+// Load env
 config();
 
-// Entities
-
-// Configuration TypeORM
 const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
   host: process.env.DATABASE_HOST,
@@ -29,13 +33,10 @@ const dataSourceOptions: DataSourceOptions = {
   username: process.env.DATABASE_USERNAME,
   password: process.env.DATABASE_PASSWORD,
   database: process.env.DATABASE_NAME,
-  synchronize: process.env.DATABASE_SYNCHRONIZE === 'false',
+  synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
   logging: process.env.DATABASE_LOGGING === 'true',
 
-  // SSL requis pour Neon
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
 
   entities: [
     User,
@@ -54,9 +55,12 @@ const dataSourceOptions: DataSourceOptions = {
     Cart,
     CartItem,
     Announcement,
+    Transaction,
+    ExpenseCategory,
+    MemberContribution,
   ],
 
-  migrations: ['src/database/migrations/*.ts'],
+  migrations: process.env.NODE_ENV === 'production' ? ['dist/database/migrations/*.js'] : [],
 };
 
 const dataSource = new DataSource(dataSourceOptions);
