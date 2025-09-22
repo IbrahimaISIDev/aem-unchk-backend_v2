@@ -185,9 +185,31 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     }
 
     const user = await this.findOne(id);
+    const prevRole = user.role;
     user.role = role;
-    
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+
+    // Notification par email et in-app sur changement de rôle
+    try {
+      const appUrl = this.config.get<string>('frontend.url');
+      await this.mail.send(
+        user.email,
+        'Mise à jour de votre rôle',
+        `Bonjour ${user.nom}, votre rôle a été changé: ${prevRole} → ${role}.`,
+        `<p>Bonjour ${user.nom},</p><p>Votre rôle a été modifié&nbsp;: <strong>${prevRole}</strong> → <strong>${role}</strong>.</p>${appUrl ? `<p><a href="${appUrl}">Accéder à la plateforme</a></p>` : ''}`,
+      );
+      await this.notifications.create({
+        userId: user.id,
+        title: 'Rôle mis à jour',
+        message: `Votre rôle a été modifié: ${prevRole} → ${role}`,
+        type: NotificationType.INFO,
+        priority: NotificationPriority.NORMAL,
+      });
+    } catch (e) {
+      // No-op si l'envoi échoue
+    }
+
+    return saved;
   }
 
   async updateStatus(id: string, status: UserStatus, adminUserId: string): Promise<User> {

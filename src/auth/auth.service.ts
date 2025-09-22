@@ -256,12 +256,21 @@ export class AuthService {
 
     if (!user) {
       console.log('❌ Utilisateur non validé');
-      throw new UnauthorizedException('Identifiants invalides');
+      throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
 
     if (user.status !== UserStatus.ACTIVE) {
       console.log('❌ Compte non actif, status:', user.status);
-      throw new UnauthorizedException('Compte non activé');
+      if (user.status === UserStatus.PENDING) {
+        throw new UnauthorizedException("Votre compte n'est pas encore activé par l’admin");
+      }
+      if (user.status === UserStatus.SUSPENDED) {
+        throw new UnauthorizedException('Votre compte est suspendu');
+      }
+      if (user.status === UserStatus.INACTIVE) {
+        throw new UnauthorizedException('Votre compte est désactivé');
+      }
+      throw new UnauthorizedException('Votre compte n’est pas actif');
     }
 
     console.log('✅ Utilisateur validé');

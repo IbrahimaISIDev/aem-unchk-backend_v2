@@ -12,6 +12,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 // Swagger
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -52,6 +53,18 @@ async function bootstrap() {
   // Interceptors & filters globaux
   app.useGlobalInterceptors(new TransformInterceptor(), new LoggingInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Validation globale
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    stopAtFirstError: true,
+    exceptionFactory: (errors) => {
+      const messages = errors.flatMap((e) => Object.values(e.constraints || {}));
+      return new BadRequestException(messages.join(', '));
+    },
+  }));
 
   // --- Swagger config ---
   const swaggerConfig = new DocumentBuilder()
