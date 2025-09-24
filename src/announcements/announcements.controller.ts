@@ -1,3 +1,4 @@
+// announcements.controller.ts
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Sse, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AnnouncementsService } from './announcements.service';
@@ -12,7 +13,6 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Observable, map } from 'rxjs';
 
-// Interface pour les événements Server-Sent Events
 interface MessageEvent<T = any> {
   data: T;
   id?: string;
@@ -30,7 +30,12 @@ export class AnnouncementsController {
   @ApiOperation({ summary: 'Annonces actives pour la bannière' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async active(@Query('limit') limit?: number): Promise<Announcement[]> {
-    return this.service.listActive(limit || 5);
+    try {
+      const result = await this.service.listActive(limit || 5);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Get()
@@ -45,7 +50,12 @@ export class AnnouncementsController {
     @Query('type') type?: AnnouncementType,
     @Query('search') search?: string,
   ): Promise<PaginationResponseDto<Announcement>> {
-    return this.service.list(pagination, { status, type, search, includeArchived: false });
+    try {
+      const result = await this.service.list(pagination, { status, type, search, includeArchived: false });
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Get(':id')
@@ -53,47 +63,80 @@ export class AnnouncementsController {
   @ApiOperation({ summary: 'Détail annonce' })
   @ApiResponse({ status: 200, type: Announcement })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<Announcement> {
-    return this.service.get(id);
+    console.log(`GET /announcements/${id}`);
+    try {
+      const result = await this.service.get(id);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Créer une nouvelle annonce' })
+  @ApiResponse({ status: 201, type: Announcement })
   async create(@Body() dto: CreateAnnouncementDto, @CurrentUser() user: User) {
-    return this.service.create(dto, user);
+    try {
+      const result = await this.service.create(dto, user);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mettre à jour une annonce' })
+  @ApiResponse({ status: 200, type: Announcement })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAnnouncementDto,
     @CurrentUser() user: User,
   ) {
-    return this.service.update(id, dto, user);
+    try {
+      const result = await this.service.update(id, dto, user);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Changer le statut d\'une annonce' })
+  @ApiResponse({ status: 200, type: Announcement })
   async changeStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ChangeAnnouncementStatusDto,
     @CurrentUser() user: User,
   ) {
-    return this.service.changeStatus(id, dto.status, user);
+    try {
+      const result = await this.service.changeStatus(id, dto.status, user);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Supprimer une annonce' })
+  @ApiResponse({ status: 204 })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    return this.service.remove(id, user);
+    try {
+      await this.service.remove(id, user);
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Sse('stream')

@@ -1,3 +1,4 @@
+// dto/create-announcement.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AnnouncementStatus, AnnouncementType } from '../entities/announcement.entity';
@@ -94,6 +95,11 @@ export class UpdateAnnouncementDto {
   @IsOptional()
   @IsBoolean()
   isFeatured?: boolean;
+
+  @ApiPropertyOptional({ enum: AnnouncementStatus })
+  @IsOptional()
+  @IsEnum(AnnouncementStatus)
+  status?: AnnouncementStatus;
 }
 
 export class ChangeAnnouncementStatusDto {
