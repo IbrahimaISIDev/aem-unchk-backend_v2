@@ -1,4 +1,4 @@
-// src/auth/auth.controller.ts - VERSION FUSIONNÉE
+// src/auth/auth.controller.ts - VERSION CORRIGÉE
 import {
   Controller,
   Post,
@@ -18,7 +18,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { AuthService } from './auth.service';
+import { AuthService, RegisterResponseDto } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -41,7 +41,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Connexion utilisateur',
-    description: 'Authentifie un utilisateur avec email/téléphone et mot de passe',
+    description: 'Authentifie un utilisateur avec email/téléphone et mot de passe. Seuls les comptes ACTIFS peuvent se connecter.',
   })
   @ApiBody({
     type: LoginDto,
@@ -54,7 +54,20 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Identifiants invalides',
+    description: 'Identifiants invalides ou compte non activé',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { 
+          type: 'string', 
+          examples: [
+            'Email ou mot de passe incorrect',
+            'Votre compte n\'est pas encore activé par un administrateur. Veuillez patienter.',
+            'Votre compte est suspendu. Contactez l\'administrateur.'
+          ]
+        }
+      }
+    }
   })
   @ApiResponse({
     status: 429,
@@ -77,6 +90,7 @@ export class AuthController {
         token_length: result.token?.length,
         user_id: result.user?.id,
         user_email: result.user?.email,
+        user_status: result.user?.status,
       });
 
       return result;
@@ -86,12 +100,13 @@ export class AuthController {
     }
   }
 
-  // 📝 Inscription
+  // 📝 Inscription SANS auto-connexion
   @Public()
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Inscription utilisateur',
-    description: 'Crée un nouveau compte utilisateur',
+    description: 'Crée un nouveau compte utilisateur en statut PENDING. L\'utilisateur ne peut pas se connecter tant que son compte n\'est pas activé par un administrateur.',
   })
   @ApiBody({
     type: RegisterDto,
@@ -99,8 +114,27 @@ export class AuthController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Inscription réussie',
-    type: AuthResponseDto,
+    description: 'Inscription réussie - Compte en attente d\'activation',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { 
+          type: 'string', 
+          example: 'Inscription réussie ! Votre compte est en attente d\'activation par un administrateur.' 
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            nom: { type: 'string' },
+            prenom: { type: 'string' },
+            email: { type: 'string' },
+            status: { type: 'string', enum: ['PENDING'] }
+          }
+        },
+        requiresActivation: { type: 'boolean', example: true }
+      }
+    }
   })
   @ApiResponse({
     status: 409,
@@ -110,8 +144,25 @@ export class AuthController {
     status: 400,
     description: 'Données d\'inscription invalides',
   })
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
-    return this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto): Promise<RegisterResponseDto> {
+    console.log('🔄 AuthController.register - Début');
+    
+    try {
+      const result = await this.authService.register(registerDto);
+      
+      console.log('✅ AuthService.register terminé avec succès');
+      console.log('📤 Réponse d\'inscription:', {
+        message: result.message,
+        user_id: result.user.id,
+        user_status: result.user.status,
+        requiresActivation: result.requiresActivation,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('❌ Erreur dans AuthController.register:', error);
+      throw error;
+    }
   }
 
   // 👤 Profil

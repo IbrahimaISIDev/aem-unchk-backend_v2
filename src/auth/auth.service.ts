@@ -1,29 +1,45 @@
-// src/auth/auth.service.ts - VERSION FUSIONNÉE
+// src/auth/auth.service.ts - VERSION COMPLÈTE CORRIGÉE
 import {
   Injectable,
   UnauthorizedException,
   ConflictException,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { User, UserRole, UserStatus } from '../users/entities/user.entity';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
-import { UpdateProfileDto } from '../users/dto/update-profile.dto';
-import { JwtPayload } from './strategies/jwt.strategy';
-import { NotificationsService } from '../notifications/notifications.service';
-import { MailService } from '../email/email.service';
-import { NotificationPriority, NotificationType } from '../notifications/entities/notification.entity';
-import { Eno } from '../academics/entities/eno.entity';
-import { Pole } from '../academics/entities/pole.entity';
-import { Filiere } from '../academics/entities/filiere.entity';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { User, UserRole, UserStatus } from "../users/entities/user.entity";
+import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
+import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto";
+import { AuthResponseDto } from "./dto/auth-response.dto";
+import { UpdateProfileDto } from "../users/dto/update-profile.dto";
+import { JwtPayload } from "./strategies/jwt.strategy";
+import { NotificationsService } from "../notifications/notifications.service";
+import { MailService } from "../email/email.service";
+import {
+  NotificationPriority,
+  NotificationType,
+} from "../notifications/entities/notification.entity";
+import { Eno } from "../academics/entities/eno.entity";
+import { Pole } from "../academics/entities/pole.entity";
+import { Filiere } from "../academics/entities/filiere.entity";
+
+// DTO spécifique pour la réponse d'inscription
+export interface RegisterResponseDto {
+  message: string;
+  user: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+    status: UserStatus;
+  };
+  requiresActivation: boolean;
+}
 
 @Injectable()
 export class AuthService {
@@ -39,27 +55,30 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private notifications: NotificationsService,
-    private mail: MailService,
+    private mail: MailService
   ) {}
 
   // 🔎 Validation utilisateur avec logs détaillés
-  async validateUser(identifier: string, password: string): Promise<User | null> {
-    console.log('🔍 validateUser - Début avec:', {
+  async validateUser(
+    identifier: string,
+    password: string
+  ): Promise<User | null> {
+    console.log("🔍 validateUser - Début avec:", {
       identifier,
       hasPassword: !!password,
     });
 
     try {
-      const raw = identifier?.toString() ?? '';
+      const raw = identifier?.toString() ?? "";
       const normalized = raw.trim();
-      const isEmail = normalized.includes('@');
+      const isEmail = normalized.includes("@");
       const lookup = isEmail
         ? { email: normalized.toLowerCase() }
         : { telephone: normalized };
 
       const user = await this.usersRepository.findOne({ where: lookup });
 
-      console.log('📊 Résultat de la recherche utilisateur:', {
+      console.log("📊 Résultat de la recherche utilisateur:", {
         userFound: !!user,
         userId: user?.id,
         userEmail: user?.email,
@@ -69,39 +88,40 @@ export class AuthService {
       });
 
       if (!user) {
-        console.log('❌ Aucun utilisateur trouvé avec cet identifier');
+        console.log("❌ Aucun utilisateur trouvé avec cet identifier");
         return null;
       }
 
-      console.log('🔐 Validation du mot de passe...');
+      console.log("🔐 Validation du mot de passe...");
       const isPasswordValid = await user.validatePassword(password);
 
-      console.log('🔐 Résultat de la validation du mot de passe:', {
+      console.log("🔐 Résultat de la validation du mot de passe:", {
         isValid: isPasswordValid,
         inputPasswordLength: password?.length,
       });
 
       if (!isPasswordValid) {
-        console.log('❌ Mot de passe invalide');
+        console.log("❌ Mot de passe invalide");
         return null;
       }
 
-      console.log('✅ Utilisateur et mot de passe validés');
+      console.log("✅ Utilisateur et mot de passe validés");
       return user;
     } catch (error) {
-      console.error('❌ Erreur dans validateUser:', error);
+      console.error("❌ Erreur dans validateUser:", error);
       return null;
     }
   }
 
-  // 📝 Inscription avec validation complète
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    console.log('🔄 AuthService.register - Début');
-    console.log('📥 RegisterDto:', {
+  // 📝 Inscription SANS auto-connexion
+  async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
+    console.log("🔄 AuthService.register - Début");
+    console.log("📥 RegisterDto:", {
       email: registerDto.email,
       passwordLength: registerDto.password?.length,
       confirmPasswordLength: registerDto.confirmer_mot_de_passe?.length,
-      passwordsMatch: registerDto.password === registerDto.confirmer_mot_de_passe,
+      passwordsMatch:
+        registerDto.password === registerDto.confirmer_mot_de_passe,
     });
 
     const {
@@ -125,13 +145,15 @@ export class AuthService {
     } = registerDto;
 
     if (!enoId || !poleId || !filiereId) {
-      throw new BadRequestException("Les champs ENO, Pôle et Filière sont requis");
+      throw new BadRequestException(
+        "Les champs ENO, Pôle et Filière sont requis"
+      );
     }
 
     // Vérifier que les mots de passe correspondent
     if (password !== confirmer_mot_de_passe) {
-      console.log('❌ Mots de passe ne correspondent pas');
-      throw new BadRequestException('Les mots de passe ne correspondent pas');
+      console.log("❌ Mots de passe ne correspondent pas");
+      throw new BadRequestException("Les mots de passe ne correspondent pas");
     }
 
     try {
@@ -141,8 +163,8 @@ export class AuthService {
       });
 
       if (existingUserByEmail) {
-        console.log('❌ Email déjà utilisé');
-        throw new ConflictException('Cet email est déjà utilisé');
+        console.log("❌ Email déjà utilisé");
+        throw new ConflictException("Cet email est déjà utilisé");
       }
 
       // Vérifier l'unicité du téléphone
@@ -151,21 +173,34 @@ export class AuthService {
       });
 
       if (existingUserByPhone) {
-        console.log('❌ Téléphone déjà utilisé');
-        throw new ConflictException('Ce numéro de téléphone est déjà utilisé');
+        console.log("❌ Téléphone déjà utilisé");
+        throw new ConflictException("Ce numéro de téléphone est déjà utilisé");
       }
 
       let enoRecord: Eno | null = null;
       let poleRecord: Pole | null = null;
       let filiereRecord: Filiere | null = null;
-      if (enoId) enoRecord = await this.enosRepository.findOne({ where: { id: enoId } });
-      if (poleId) poleRecord = await this.polesRepository.findOne({ where: { id: poleId } });
-      if (filiereId) filiereRecord = await this.filieresRepository.findOne({ where: { id: filiereId } });
-      if (filiereRecord && poleRecord && filiereRecord.poleId !== poleRecord.id) {
-        throw new BadRequestException('La filière sélectionnée n\'appartient pas au pôle choisi');
+      if (enoId)
+        enoRecord = await this.enosRepository.findOne({ where: { id: enoId } });
+      if (poleId)
+        poleRecord = await this.polesRepository.findOne({
+          where: { id: poleId },
+        });
+      if (filiereId)
+        filiereRecord = await this.filieresRepository.findOne({
+          where: { id: filiereId },
+        });
+      if (
+        filiereRecord &&
+        poleRecord &&
+        filiereRecord.poleId !== poleRecord.id
+      ) {
+        throw new BadRequestException(
+          "La filière sélectionnée n'appartient pas au pôle choisi"
+        );
       }
 
-      console.log('🔄 Création utilisateur...');
+      console.log("🔄 Création utilisateur...");
       const user = this.usersRepository.create({
         nom,
         prenom,
@@ -174,7 +209,7 @@ export class AuthService {
         telephone,
         adresse,
         ville,
-        universite: 'Université Numérique Cheikh Hamidou Kane',
+        universite: "Université Numérique Cheikh Hamidou Kane",
         eno_rattachement: enoRecord?.name || eno_rattachement,
         filiere: filiereRecord?.name || filiere,
         annee_promotion,
@@ -184,56 +219,66 @@ export class AuthService {
         poleId: poleRecord?.id,
         filiereId: filiereRecord?.id,
         role: UserRole.MEMBER,
-        status: UserStatus.PENDING,
+        status: UserStatus.PENDING, // ⚠️ IMPORTANT: Status PENDING
         isActive: true,
         date_inscription: new Date(),
       });
 
       const savedUser = await this.usersRepository.save(user);
-      console.log('✅ Utilisateur créé avec ID:', savedUser.id);
+      console.log("✅ Utilisateur créé avec ID:", savedUser.id);
+      console.log("📋 Status de l'utilisateur:", savedUser.status);
 
       // Notifier les admins via in-app notification et email (si configuré)
-      const admins = await this.usersRepository.find({ where: { role: UserRole.ADMIN } });
+      const admins = await this.usersRepository.find({
+        where: { role: UserRole.ADMIN },
+      });
       const adminEmails = admins.map((a) => a.email).filter(Boolean);
+
       await Promise.all(
         admins.map((a) =>
           this.notifications.create({
             userId: a.id,
-            title: 'Nouvelle inscription en attente',
+            title: "Nouvelle inscription en attente",
             message: `${savedUser.nom} ${savedUser.prenom} a créé un compte. Statut: EN ATTENTE`,
             type: NotificationType.INFO,
             priority: NotificationPriority.HIGH,
-          }),
-        ),
+          })
+        )
       );
+
       if (adminEmails.length) {
         await this.mail.send(
           adminEmails,
-          'Nouvelle inscription en attente',
+          "Nouvelle inscription en attente",
           `${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.`,
-          `<p><strong>Nouvelle inscription</strong></p><p>${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.</p>`,
+          `<p><strong>Nouvelle inscription</strong></p><p>${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.</p>`
         );
       }
 
-      // Générer les tokens (retournés mais le front gère le statut pending)
-      const tokens = await this.generateTokens(savedUser);
-
+      // ✅ MODIFICATION PRINCIPALE: Ne PAS générer de tokens
+      // Retourner seulement les informations de base + message d'attente
       return {
-        user: savedUser,
-        access_token: tokens.access_token,
-        token: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        message:
+          "Inscription réussie ! Votre compte est en attente d'activation par un administrateur.",
+        user: {
+          id: savedUser.id,
+          nom: savedUser.nom,
+          prenom: savedUser.prenom,
+          email: savedUser.email,
+          status: savedUser.status,
+        },
+        requiresActivation: true,
       };
     } catch (error) {
-      console.error('❌ Erreur register:', error);
+      console.error("❌ Erreur register:", error);
       throw error;
     }
   }
 
-  // 🔑 Connexion avec logs détaillés
+  // 🔑 Connexion avec vérification du statut ACTIVE
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    console.log('🔄 AuthService.login - Début');
-    console.log('📥 LoginDto:', {
+    console.log("🔄 AuthService.login - Début");
+    console.log("📥 LoginDto:", {
       email: loginDto.email,
       telephone: loginDto.telephone,
       passwordLength: loginDto.password?.length,
@@ -242,38 +287,49 @@ export class AuthService {
     const { email, telephone, password } = loginDto;
 
     if (!password) {
-      throw new BadRequestException('Mot de passe requis');
+      throw new BadRequestException("Mot de passe requis");
     }
 
     const identifier = email || telephone;
     if (!identifier) {
-      throw new BadRequestException('Email ou téléphone requis');
+      throw new BadRequestException("Email ou téléphone requis");
     }
 
-    console.log('🔍 Recherche utilisateur avec:', identifier);
+    console.log("🔍 Recherche utilisateur avec:", identifier);
 
     const user = await this.validateUser(identifier, password);
 
     if (!user) {
-      console.log('❌ Utilisateur non validé');
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
+      console.log("❌ Utilisateur non validé");
+      throw new UnauthorizedException("Email ou mot de passe incorrect");
     }
 
+    // ✅ VÉRIFICATION STRICTE DU STATUT
     if (user.status !== UserStatus.ACTIVE) {
-      console.log('❌ Compte non actif, status:', user.status);
+      console.log("❌ Compte non actif, status:", user.status);
+
       if (user.status === UserStatus.PENDING) {
-        throw new UnauthorizedException("Votre compte n'est pas encore activé par l’admin");
+        throw new UnauthorizedException(
+          "Votre compte n'est pas encore activé par un administrateur. Veuillez patienter."
+        );
       }
       if (user.status === UserStatus.SUSPENDED) {
-        throw new UnauthorizedException('Votre compte est suspendu');
+        throw new UnauthorizedException(
+          "Votre compte est suspendu. Contactez l'administrateur."
+        );
       }
       if (user.status === UserStatus.INACTIVE) {
-        throw new UnauthorizedException('Votre compte est désactivé');
+        throw new UnauthorizedException(
+          "Votre compte est désactivé. Contactez l'administrateur."
+        );
       }
-      throw new UnauthorizedException('Votre compte n’est pas actif');
+
+      throw new UnauthorizedException(
+        "Votre compte n'est pas actif. Contactez l'administrateur."
+      );
     }
 
-    console.log('✅ Utilisateur validé');
+    console.log("✅ Utilisateur validé et autorisé à se connecter");
 
     // Mettre à jour la dernière connexion
     user.lastLoginAt = new Date();
@@ -286,6 +342,8 @@ export class AuthService {
       access_token: tokens.access_token,
       token: tokens.access_token,
       refreshToken: tokens.refresh_token,
+      message: "Connexion réussie",
+      requiresActivation: false,
     };
   }
 
@@ -296,20 +354,23 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('Utilisateur introuvable');
+      throw new NotFoundException("Utilisateur introuvable");
     }
 
     return user;
   }
 
   // ✏️ Mise à jour du profil avec validation d'unicité
-  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto): Promise<User> {
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto
+  ): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
     });
 
     if (!user) {
-      throw new NotFoundException('Utilisateur introuvable');
+      throw new NotFoundException("Utilisateur introuvable");
     }
 
     // Vérifier l'unicité de l'email si modifié
@@ -319,22 +380,25 @@ export class AuthService {
       });
 
       if (existingUserByEmail) {
-        throw new ConflictException('Cet email est déjà utilisé');
+        throw new ConflictException("Cet email est déjà utilisé");
       }
     }
 
     // Vérifier l'unicité du téléphone si modifié
-    if (updateProfileDto.telephone && updateProfileDto.telephone !== user.telephone) {
+    if (
+      updateProfileDto.telephone &&
+      updateProfileDto.telephone !== user.telephone
+    ) {
       const existingUserByPhone = await this.usersRepository.findOne({
         where: { telephone: updateProfileDto.telephone },
       });
 
       if (existingUserByPhone) {
-        throw new ConflictException('Ce numéro de téléphone est déjà utilisé');
+        throw new ConflictException("Ce numéro de téléphone est déjà utilisé");
       }
     }
 
-    if (typeof updateProfileDto.universite !== 'undefined') {
+    if (typeof updateProfileDto.universite !== "undefined") {
       delete (updateProfileDto as any).universite;
     }
 
@@ -345,12 +409,20 @@ export class AuthService {
   }
 
   // 🔑 Changement de mot de passe
-  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto
+  ): Promise<void> {
     const { oldPassword, newPassword, confirmNewPassword } = changePasswordDto;
 
     // Vérifier la confirmation du nouveau mot de passe si fournie
-    if (typeof confirmNewPassword !== 'undefined' && newPassword !== confirmNewPassword) {
-      throw new BadRequestException('Les nouveaux mots de passe ne correspondent pas');
+    if (
+      typeof confirmNewPassword !== "undefined" &&
+      newPassword !== confirmNewPassword
+    ) {
+      throw new BadRequestException(
+        "Les nouveaux mots de passe ne correspondent pas"
+      );
     }
 
     const user = await this.usersRepository.findOne({
@@ -358,13 +430,13 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('Utilisateur introuvable');
+      throw new NotFoundException("Utilisateur introuvable");
     }
 
     const isOldPasswordValid = await user.validatePassword(oldPassword);
 
     if (!isOldPasswordValid) {
-      throw new UnauthorizedException('Ancien mot de passe incorrect');
+      throw new UnauthorizedException("Ancien mot de passe incorrect");
     }
 
     user.password = newPassword;
@@ -372,7 +444,9 @@ export class AuthService {
   }
 
   // 📩 Mot de passe oublié (placeholder sécurisé)
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto
+  ): Promise<{ message: string }> {
     const { email } = forgotPasswordDto;
 
     const user = await this.usersRepository.findOne({
@@ -382,7 +456,8 @@ export class AuthService {
     if (!user) {
       // Ne pas révéler si l'email existe ou non pour des raisons de sécurité
       return {
-        message: 'Si cet email existe, un lien de réinitialisation a été envoyé',
+        message:
+          "Si cet email existe, un lien de réinitialisation a été envoyé",
       };
     }
 
@@ -390,29 +465,36 @@ export class AuthService {
     // Pour l'instant, retourner un message de succès
 
     return {
-      message: 'Si cet email existe, un lien de réinitialisation a été envoyé',
+      message: "Si cet email existe, un lien de réinitialisation a été envoyé",
     };
   }
 
   // 🔄 Réinitialisation de mot de passe (placeholder)
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto
+  ): Promise<{ message: string }> {
     const { token, newPassword, confirmNewPassword } = resetPasswordDto;
 
-    if (typeof confirmNewPassword !== 'undefined' && newPassword !== confirmNewPassword) {
-      throw new BadRequestException('Les mots de passe ne correspondent pas');
+    if (
+      typeof confirmNewPassword !== "undefined" &&
+      newPassword !== confirmNewPassword
+    ) {
+      throw new BadRequestException("Les mots de passe ne correspondent pas");
     }
 
     // TODO: Implémenter la validation du token de réinitialisation
     // Pour l'instant, retourner un message d'erreur
 
-    throw new BadRequestException('Token de réinitialisation invalide ou expiré');
+    throw new BadRequestException(
+      "Token de réinitialisation invalide ou expiré"
+    );
   }
 
   // 🔁 Rafraîchissement des tokens
   async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('jwt.refreshSecret'),
+        secret: this.configService.get<string>("jwt.refreshSecret"),
       });
 
       const user = await this.usersRepository.findOne({
@@ -420,7 +502,7 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        throw new UnauthorizedException('Token invalide');
+        throw new UnauthorizedException("Token invalide");
       }
 
       const tokens = await this.generateTokens(user);
@@ -429,7 +511,7 @@ export class AuthService {
         access_token: tokens.access_token,
       };
     } catch (error) {
-      throw new UnauthorizedException('Token de rafraîchissement invalide');
+      throw new UnauthorizedException("Token de rafraîchissement invalide");
     }
   }
 
@@ -438,23 +520,26 @@ export class AuthService {
     access_token: string;
     refresh_token: string;
   }> {
-    console.log('🔑 Génération des tokens pour utilisateur:', user.id);
+    console.log("🔑 Génération des tokens pour utilisateur:", user.id);
 
-    const payload: Omit<JwtPayload, 'iat' | 'exp'> = {
+    const payload: Omit<JwtPayload, "iat" | "exp"> = {
       sub: user.id,
       email: user.email,
       role: user.role,
     };
 
-    console.log('📝 Payload JWT:', payload);
+    console.log("📝 Payload JWT:", payload);
 
     // Vérifier la configuration
-    const jwtSecret = this.configService.get<string>('jwt.secret');
-    const jwtRefreshSecret = this.configService.get<string>('jwt.refreshSecret');
-    const jwtExpiresIn = this.configService.get<string>('jwt.expiresIn');
-    const jwtRefreshExpiresIn = this.configService.get<string>('jwt.refreshExpiresIn');
+    const jwtSecret = this.configService.get<string>("jwt.secret");
+    const jwtRefreshSecret =
+      this.configService.get<string>("jwt.refreshSecret");
+    const jwtExpiresIn = this.configService.get<string>("jwt.expiresIn");
+    const jwtRefreshExpiresIn = this.configService.get<string>(
+      "jwt.refreshExpiresIn"
+    );
 
-    console.log('🔧 Configuration JWT:', {
+    console.log("🔧 Configuration JWT:", {
       hasSecret: !!jwtSecret,
       hasRefreshSecret: !!jwtRefreshSecret,
       expiresIn: jwtExpiresIn,
@@ -462,25 +547,25 @@ export class AuthService {
     });
 
     if (!jwtSecret) {
-      console.error('❌ JWT_SECRET manquant dans la configuration');
-      throw new Error('Configuration JWT manquante');
+      console.error("❌ JWT_SECRET manquant dans la configuration");
+      throw new Error("Configuration JWT manquante");
     }
 
     try {
-      console.log('🔄 Signature des tokens...');
+      console.log("🔄 Signature des tokens...");
 
       const [access_token, refresh_token] = await Promise.all([
         this.jwtService.signAsync(payload, {
           secret: jwtSecret,
-          expiresIn: jwtExpiresIn || '1h',
+          expiresIn: jwtExpiresIn || "1h",
         }),
         this.jwtService.signAsync(payload, {
           secret: jwtRefreshSecret || jwtSecret, // Fallback sur le secret principal
-          expiresIn: jwtRefreshExpiresIn || '7d',
+          expiresIn: jwtRefreshExpiresIn || "7d",
         }),
       ]);
 
-      console.log('✅ Tokens générés avec succès:', {
+      console.log("✅ Tokens générés avec succès:", {
         access_token_length: access_token?.length,
         refresh_token_length: refresh_token?.length,
       });
@@ -490,7 +575,7 @@ export class AuthService {
         refresh_token,
       };
     } catch (error) {
-      console.error('❌ Erreur lors de la génération des tokens:', error);
+      console.error("❌ Erreur lors de la génération des tokens:", error);
       throw new Error(`Échec de génération des tokens: ${error.message}`);
     }
   }

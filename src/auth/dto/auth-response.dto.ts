@@ -26,4 +26,6 @@ export class AuthResponseDto {
     required: false,
   })
   refreshToken?: string;
+  message: string;
+  requiresActivation: any;
 }
