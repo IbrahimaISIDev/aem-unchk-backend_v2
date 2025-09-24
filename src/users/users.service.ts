@@ -100,7 +100,7 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: ['activities', 'media', 'notifications'],
+      relations: ['activities', 'media', 'notifications', 'eno', 'pole', 'filiereRef'],
     });
 
     if (!user) {
