@@ -32,7 +32,7 @@ async function bootstrap() {
     'https://aem-unchk-connect.vercel.app', // frontend en prod
     'https://aem-unchk-backend-v2.onrender.com', // backend Render (⚠️ ajouté ici)
     'http://localhost:3000',  
-    'http://localhost:8080',             // backend local              // backend local
+    'http://localhost:8080',              // frontend local dev
     'http://localhost:5173',               // frontend Vite local
   ];
 
