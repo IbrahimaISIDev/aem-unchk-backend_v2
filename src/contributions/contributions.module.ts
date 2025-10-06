@@ -7,7 +7,7 @@ import { UsersModule } from '../users/users.module';
 import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MemberContribution]), UsersModule],
+  imports: [TypeOrmModule.forFeature([MemberContribution]), UsersModule, EmailModule],
   controllers: [ContributionsController],
   providers: [ContributionsService],
   exports: [ContributionsService],
