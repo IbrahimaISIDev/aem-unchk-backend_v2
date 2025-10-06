@@ -24,6 +24,7 @@ import { FinanceModule } from './finance/finance.module';
 import { ContributionsModule } from './contributions/contributions.module';
 import { MarketplaceAnalyticsModule } from './marketplace-analytics/marketplace-analytics.module';
 import { AcademicsModule } from './academics/academics.module';
+import { EmailModule } from './email/email.module';
 import { HealthController } from './common/controllers/health.controller';
 import configuration from './config/configuration';
 
