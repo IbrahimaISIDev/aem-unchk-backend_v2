@@ -38,14 +38,30 @@ export default () => ({
   },
 
   email: {
-    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || "",
+    host:
+      process.env["email.host"] ||
+      process.env.EMAIL_HOST ||
+      process.env.SMTP_HOST ||
+      "",
     port: parseInt(
-      process.env.EMAIL_PORT || process.env.SMTP_PORT || "587",
+      process.env["email.port"] ||
+        process.env.EMAIL_PORT ||
+        process.env.SMTP_PORT ||
+        "587",
       10
     ),
-    user: process.env.EMAIL_USER || process.env.SMTP_USER || "",
-    pass: process.env.EMAIL_PASS || process.env.SMTP_PASS || "",
+    user:
+      process.env["email.user"] ||
+      process.env.EMAIL_USER ||
+      process.env.SMTP_USER ||
+      "",
+    pass:
+      process.env["email.pass"] ||
+      process.env.EMAIL_PASS ||
+      process.env.SMTP_PASS ||
+      "",
     from:
+      process.env["email.from"] ||
       process.env.EMAIL_FROM ||
       process.env.SMTP_FROM ||
       "noreply@islamic-platform.com",
