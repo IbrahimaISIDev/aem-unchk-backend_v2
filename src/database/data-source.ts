@@ -27,12 +27,16 @@ import { ExpenseCategory } from '../finance/entities/expense-category.entity';
 import { Eno } from '../academics/entities/eno.entity';
 import { Pole } from '../academics/entities/pole.entity';
 import { Filiere } from '../academics/entities/filiere.entity';
+import { PrayerTime } from '../prayer/entities/prayer-time.entity';
+import { PrayerTimeAdjustment } from '../prayer/entities/prayer-time-adjustment.entity';
+import { PasswordReset } from '../auth/entities/password-reset.entity';
+import { ReligiousActivity } from '../religious-activities/entities/religious-activity.entity';
+import { PedagogicActivity } from '../pedagogic-activities/entities/pedagogic-activity.entity';
 
 // Fonction qui retourne les options TypeORM
 export const dataSourceOptions = (configService?: ConfigService): DataSourceOptions => {
   const get = (key: string) => {
     if (configService) return configService.get(key);
-    // fallback sur process.env si ConfigService n'est pas fourni
     const envVars: Record<string, any> = {
       'database.host': process.env.DATABASE_HOST,
       'database.port': parseInt(process.env.DATABASE_PORT || '5432', 10),
@@ -54,7 +58,7 @@ export const dataSourceOptions = (configService?: ConfigService): DataSourceOpti
     database: get('database.name'),
     synchronize: get('database.synchronize'),
     logging: get('database.logging'),
-    ssl: { rejectUnauthorized: false }, // requis pour Neon
+    ssl: { rejectUnauthorized: false },
 
     entities: [
       User,
@@ -79,12 +83,16 @@ export const dataSourceOptions = (configService?: ConfigService): DataSourceOpti
       Eno,
       Pole,
       Filiere,
+      PrayerTime,
+      PrayerTimeAdjustment,
+      PasswordReset,
+      ReligiousActivity,
+      PedagogicActivity,
     ],
 
     migrations: ['src/database/migrations/*.ts'],
   };
 };
 
-// DataSource principal
 const dataSource = new DataSource(dataSourceOptions());
 export default dataSource;

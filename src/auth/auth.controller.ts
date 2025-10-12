@@ -9,6 +9,7 @@ import {
   Put,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,7 +23,9 @@ import { AuthService, RegisterResponseDto } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { Roles } from './decorators/roles.decorator';
+import { RolesGuard } from './guards/roles.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -328,6 +331,25 @@ export class AuthController {
     @Body() resetPasswordDto: ResetPasswordDto,
   ): Promise<{ message: string }> {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  // 📊 Force mot de passe
+  @Public()
+  @Get('password-strength')
+  @ApiOperation({ summary: "Calculer la robustesse d'un mot de passe" })
+  async strength(@Query('password') password: string) {
+    const { computePasswordStrength } = await import('./utils/password-strength');
+    return computePasswordStrength(password || '');
+  }
+
+  // 👨‍💼 Admin: déclencher un reset par email
+  @Post('admin/reset-password')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Déclencher un email de réinitialisation pour un utilisateur' })
+  async adminReset(@Body('email') email: string) {
+    return this.authService.forgotPassword({ email });
   }
 
   // 🔁 Refresh Token

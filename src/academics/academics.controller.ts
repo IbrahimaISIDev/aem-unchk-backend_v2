@@ -25,21 +25,21 @@ export class AcademicsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Post('enos')
   createEno(@Body() dto: CreateEnoDto) {
     return this.service.createEno(dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Patch('enos/:id')
   updateEno(@Param('id') id: string, @Body() dto: UpdateEnoDto) {
     return this.service.updateEno(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Delete('enos/:id')
   deleteEno(@Param('id') id: string) {
     return this.service.deleteEno(id);
@@ -52,21 +52,21 @@ export class AcademicsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Post('poles')
   createPole(@Body() dto: CreatePoleDto) {
     return this.service.createPole(dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Patch('poles/:id')
   updatePole(@Param('id') id: string, @Body() dto: UpdatePoleDto) {
     return this.service.updatePole(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Delete('poles/:id')
   deletePole(@Param('id') id: string) {
     return this.service.deletePole(id);
@@ -79,21 +79,21 @@ export class AcademicsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Post('filieres')
   createFiliere(@Body() dto: CreateFiliereDto) {
     return this.service.createFiliere(dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Patch('filieres/:id')
   updateFiliere(@Param('id') id: string, @Body() dto: UpdateFiliereDto) {
     return this.service.updateFiliere(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER, UserRole.PEDAGOGIC_MANAGER)
   @Delete('filieres/:id')
   deleteFiliere(@Param('id') id: string) {
     return this.service.deleteFiliere(id);

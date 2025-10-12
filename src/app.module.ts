@@ -25,6 +25,8 @@ import { ContributionsModule } from './contributions/contributions.module';
 import { MarketplaceAnalyticsModule } from './marketplace-analytics/marketplace-analytics.module';
 import { AcademicsModule } from './academics/academics.module';
 import { EmailModule } from './email/email.module';
+import { ReligiousActivitiesModule } from './religious-activities/religious-activities.module';
+import { PedagogicActivitiesModule } from './pedagogic-activities/pedagogic-activities.module';
 import { HealthController } from './common/controllers/health.controller';
 import configuration from './config/configuration';
 
@@ -98,6 +100,8 @@ import configuration from './config/configuration';
     ContributionsModule,
     MarketplaceAnalyticsModule,
     AcademicsModule,
+    ReligiousActivitiesModule,
+    PedagogicActivitiesModule,
   ],
   controllers: [HealthController],
   providers: [],

@@ -46,14 +46,15 @@ export class MarketplaceController {
 
   @Post('products')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.FINANCE_MANAGER)
   @ApiBearerAuth('JWT-auth')
   async createProduct(@Body() dto: CreateProductDto, @CurrentUser() user: User) {
     return this.service.createProduct(dto, user);
   }
 
   @Put('products/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.FINANCE_MANAGER)
   @ApiBearerAuth('JWT-auth')
   async updateProduct(
     @Param('id', ParseUUIDPipe) id: string,
@@ -64,7 +65,8 @@ export class MarketplaceController {
   }
 
   @Delete('products/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.FINANCE_MANAGER)
   @ApiBearerAuth('JWT-auth')
   async deleteProduct(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.service.deleteProduct(id, user);
@@ -72,7 +74,7 @@ export class MarketplaceController {
 
   @Post('products/:id/images')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.FINANCE_MANAGER)
   @ApiBearerAuth('JWT-auth')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files', 10))
@@ -104,7 +106,7 @@ export class MarketplaceController {
 
   @Patch('reviews/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.FINANCE_MANAGER)
   @ApiBearerAuth('JWT-auth')
   async updateReviewStatus(
     @Param('id', ParseUUIDPipe) id: string,

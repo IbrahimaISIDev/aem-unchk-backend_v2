@@ -157,7 +157,7 @@ export class MediaController {
 
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lister les médias (admin)',

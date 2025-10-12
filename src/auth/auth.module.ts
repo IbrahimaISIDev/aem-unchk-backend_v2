@@ -16,10 +16,11 @@ import { EmailModule } from '../email/email.module';
 import { Eno } from '../academics/entities/eno.entity';
 import { Pole } from '../academics/entities/pole.entity';
 import { Filiere } from '../academics/entities/filiere.entity';
+import { PasswordReset } from './entities/password-reset.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Eno, Pole, Filiere]),
+    TypeOrmModule.forFeature([User, Eno, Pole, Filiere, PasswordReset]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

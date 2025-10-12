@@ -27,6 +27,9 @@ import {
 import { Eno } from "../academics/entities/eno.entity";
 import { Pole } from "../academics/entities/pole.entity";
 import { Filiere } from "../academics/entities/filiere.entity";
+import { computePasswordStrength, isStrongPassword } from './utils/password-strength';
+import { PasswordReset } from './entities/password-reset.entity';
+import * as crypto from 'crypto';
 
 // DTO spécifique pour la réponse d'inscription
 export interface RegisterResponseDto {
@@ -52,6 +55,8 @@ export class AuthService {
     private polesRepository: Repository<Pole>,
     @InjectRepository(Filiere)
     private filieresRepository: Repository<Filiere>,
+    @InjectRepository(PasswordReset)
+    private resetRepository: Repository<PasswordReset>,
     private jwtService: JwtService,
     private configService: ConfigService,
     private notifications: NotificationsService,
@@ -157,7 +162,11 @@ export class AuthService {
     }
 
     try {
-      // Vérifier l'unicité de l'email
+      if (!isStrongPassword(password)) {
+        const s = computePasswordStrength(password || '');
+        throw new BadRequestException(`Mot de passe trop faible (score ${s.score}/100). Exigez au moins 8 caractères avec majuscules, minuscules, chiffres${s.hasSymbol ? '' : ', idéalement des symboles'}.`);
+      }
+
       const existingUserByEmail = await this.usersRepository.findOne({
         where: { email },
       });
@@ -167,7 +176,6 @@ export class AuthService {
         throw new ConflictException("Cet email est déjà utilisé");
       }
 
-      // Vérifier l'unicité du téléphone
       const existingUserByPhone = await this.usersRepository.findOne({
         where: { telephone },
       });
@@ -439,11 +447,15 @@ export class AuthService {
       throw new UnauthorizedException("Ancien mot de passe incorrect");
     }
 
+    if (!isStrongPassword(newPassword)) {
+      const s = computePasswordStrength(newPassword || '');
+      throw new BadRequestException(`Mot de passe trop faible (score ${s.score}/100). Exigez au moins 8 caractères avec majuscules, minuscules, chiffres.`);
+    }
+
     user.password = newPassword;
     await this.usersRepository.save(user);
   }
 
-  // 📩 Mot de passe oublié (placeholder sécurisé)
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto
   ): Promise<{ message: string }> {
@@ -454,22 +466,32 @@ export class AuthService {
     });
 
     if (!user) {
-      // Ne pas révéler si l'email existe ou non pour des raisons de sécurité
       return {
         message:
           "Si cet email existe, un lien de réinitialisation a été envoyé",
       };
     }
 
-    // TODO: Implémenter l'envoi d'email avec token de réinitialisation
-    // Pour l'instant, retourner un message de succès
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const ttlMinutes = 15;
+    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
 
-    return {
-      message: "Si cet email existe, un lien de réinitialisation a été envoyé",
-    };
+    const reset = this.resetRepository.create({ userId: user.id, tokenHash, expiresAt });
+    await this.resetRepository.save(reset);
+
+    const frontendUrl = this.configService.get<string>('frontend.url');
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    const subject = 'Réinitialisation de votre mot de passe';
+    const text = `Vous avez demandé la réinitialisation de votre mot de passe. Ce lien expire dans ${ttlMinutes} minutes: ${resetUrl}`;
+    const html = `<p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Ce lien expire dans <strong>${ttlMinutes} minutes</strong>.</p><p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>`;
+
+    await this.mail.send(user.email, subject, text, html);
+
+    return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé' };
   }
 
-  // 🔄 Réinitialisation de mot de passe (placeholder)
   async resetPassword(
     resetPasswordDto: ResetPasswordDto
   ): Promise<{ message: string }> {
@@ -482,12 +504,28 @@ export class AuthService {
       throw new BadRequestException("Les mots de passe ne correspondent pas");
     }
 
-    // TODO: Implémenter la validation du token de réinitialisation
-    // Pour l'instant, retourner un message d'erreur
+    if (!isStrongPassword(newPassword)) {
+      const s = computePasswordStrength(newPassword || '');
+      throw new BadRequestException(`Mot de passe trop faible (score ${s.score}/100).`);
+    }
 
-    throw new BadRequestException(
-      "Token de réinitialisation invalide ou expiré"
-    );
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const pr = await this.resetRepository.findOne({ where: { tokenHash } });
+
+    if (!pr || pr.usedAt || pr.expiresAt < new Date()) {
+      throw new BadRequestException('Token de réinitialisation invalide ou expiré');
+    }
+
+    const user = await this.usersRepository.findOne({ where: { id: pr.userId } });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+
+    user.password = newPassword;
+    await this.usersRepository.save(user);
+
+    pr.usedAt = new Date();
+    await this.resetRepository.save(pr);
+
+    return { message: 'Mot de passe réinitialisé avec succès' };
   }
 
   // 🔁 Rafraîchissement des tokens

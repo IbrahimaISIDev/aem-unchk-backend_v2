@@ -41,20 +41,20 @@ export class RegisterDto {
 
   @ApiProperty({
     description: 'Mot de passe',
-    example: 'motdepasse123',
-    minLength: 6,
+    example: 'Motdepasse#2025',
+    minLength: 8,
   })
   @IsString()
-  @MinLength(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' })
+  @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères' })
   password: string;
 
   @ApiProperty({
     description: 'Confirmation du mot de passe',
-    example: 'motdepasse123',
-    minLength: 6,
+    example: 'Motdepasse#2025',
+    minLength: 8,
   })
   @IsString()
-  @MinLength(6, { message: 'La confirmation du mot de passe doit contenir au moins 6 caractères' })
+  @MinLength(8, { message: 'La confirmation du mot de passe doit contenir au moins 8 caractères' })
   confirmer_mot_de_passe: string;
 
   @ApiProperty({

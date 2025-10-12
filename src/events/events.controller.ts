@@ -18,8 +18,10 @@ import { Event, EventType } from './entities/event.entity';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { ApiPaginatedResponse } from '../common/decorators/api-paginated-response.decorator';
+import { Roles } from '@/auth/decorators/roles.decorator';
+import { RolesGuard } from '@/auth/guards/roles.guard';
 
 @ApiTags('Events')
 @Controller('events')
@@ -52,7 +54,8 @@ export class EventsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Créer un événement' })
   @ApiResponse({ status: 201, type: Event })
@@ -61,7 +64,8 @@ export class EventsController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mettre à jour un événement' })
   @ApiResponse({ status: 200, type: Event })
@@ -74,7 +78,8 @@ export class EventsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Supprimer un événement' })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User): Promise<void> {

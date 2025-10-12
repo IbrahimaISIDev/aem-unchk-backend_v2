@@ -45,7 +45,7 @@ export class UsersController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Lister tous les utilisateurs',
     description: 'Récupère la liste paginée de tous les utilisateurs (admin uniquement)',
@@ -58,7 +58,7 @@ export class UsersController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Créer un utilisateur',
     description: 'Crée un nouvel utilisateur (admin uniquement)',
@@ -137,7 +137,7 @@ export class UsersController {
 
   @Post('points')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Ajouter des points à l\'utilisateur',
     description: 'Ajoute des points au compte de l\'utilisateur connecté (admin uniquement)',
@@ -180,7 +180,7 @@ export class UsersController {
 
   @Post('badges/:badge')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Ajouter un badge',
     description: 'Ajoute un badge à l\'utilisateur connecté (admin uniquement)',
@@ -199,7 +199,7 @@ export class UsersController {
 
   @Delete('badges/:badge')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Retirer un badge',
     description: 'Retire un badge de l\'utilisateur connecté (admin uniquement)',
@@ -270,7 +270,7 @@ export class UsersController {
 
   @Get('statistics')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Statistiques utilisateurs',
     description: 'Récupère les statistiques des utilisateurs (admin uniquement)',
@@ -329,7 +329,7 @@ export class UsersController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Mettre à jour un utilisateur',
     description: 'Met à jour un utilisateur (admin uniquement)',
@@ -348,7 +348,7 @@ export class UsersController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Supprimer un utilisateur',
     description: 'Supprime un utilisateur (soft delete, admin uniquement)',
@@ -363,7 +363,7 @@ export class UsersController {
 
   @Patch(':id/role')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Changer le rôle d\'un utilisateur',
     description: 'Change le rôle d\'un utilisateur (admin uniquement)',
@@ -383,7 +383,7 @@ export class UsersController {
 
   @Patch(':id/status')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL)
   @ApiOperation({
     summary: 'Changer le statut d\'un utilisateur',
     description: 'Change le statut d\'un utilisateur (admin uniquement)',

@@ -34,6 +34,10 @@ export enum UserRole {
   IMAM = "imam",
   FINANCE_MANAGER = "finance_manager",
   TREASURER = "treasurer",
+  TECH_MANAGER = "tech_manager",
+  SEC_GENERAL = "sec_general",
+  ISLAMIC_MANAGER = "islamic_manager",
+  PEDAGOGIC_MANAGER = "pedagogic_manager",
 }
 
 export enum UserStatus {

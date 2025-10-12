@@ -74,7 +74,7 @@ export class AnnouncementsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Créer une nouvelle annonce' })
   @ApiResponse({ status: 201, type: Announcement })
@@ -89,7 +89,7 @@ export class AnnouncementsController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Mettre à jour une annonce' })
   @ApiResponse({ status: 200, type: Announcement })
@@ -108,7 +108,7 @@ export class AnnouncementsController {
 
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Changer le statut d\'une annonce' })
   @ApiResponse({ status: 200, type: Announcement })
@@ -127,7 +127,7 @@ export class AnnouncementsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.TECH_MANAGER, UserRole.SEC_GENERAL)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Supprimer une annonce' })
   @ApiResponse({ status: 204 })
