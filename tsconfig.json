@@ -16,6 +16,21 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@/*": ["src/*"],
+      "@/common/*": ["src/common/*"],
+      "@/config/*": ["src/config/*"],
+      "@/auth/*": ["src/auth/*"],
+      "@/users/*": ["src/users/*"],
+      "@/media/*": ["src/media/*"],
+      "@/events/*": ["src/events/*"],
+      "@/notifications/*": ["src/notifications/*"],
+      "@/analytics/*": ["src/analytics/*"],
+      "@/prayer/*": ["src/prayer/*"],
+      "@/marketplace/*": ["src/marketplace/*"],
+      "@/database/*": ["src/database/*"],
+      "@/types/*": ["src/types/*"]
+    }
   }
 }
