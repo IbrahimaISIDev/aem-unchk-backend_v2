@@ -20,7 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ApiPaginatedResponse } from '../common/decorators/api-paginated-response.decorator';
-import { Roles } from '@/auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '@/auth/guards/roles.guard';
 
 @ApiTags('Events')
