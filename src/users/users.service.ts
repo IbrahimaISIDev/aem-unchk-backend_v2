@@ -177,11 +177,15 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
   }
 
   async updateRole(id: string, role: UserRole, adminUserId: string): Promise<User> {
-    // Vérifier que l'admin a les permissions nécessaires
     const admin = await this.findOne(adminUserId);
-    
-    if (admin.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Seuls les administrateurs peuvent changer les rôles');
+    const isAdmin = admin.role === UserRole.ADMIN;
+    const isSecGen = admin.role === UserRole.SEC_GENERAL;
+
+    if (!isAdmin && !isSecGen) {
+      throw new ForbiddenException('Permissions insuffisantes pour changer les rôles');
+    }
+    if (isSecGen && role === UserRole.ADMIN) {
+      throw new ForbiddenException('Le Secrétaire Général ne peut pas attribuer le rôle ADMIN');
     }
 
     const user = await this.findOne(id);
