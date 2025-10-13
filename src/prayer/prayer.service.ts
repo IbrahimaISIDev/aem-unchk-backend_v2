@@ -51,15 +51,16 @@ export class PrayerService {
     return `${y}-${m}-${d}`;
   }
 
-  private async fetchFromApi(params: { city: string; country: string; method?: number; date?: string }): Promise<{ timings: Timings; timezone?: string }> {
+  private async fetchFromApi(params: { city: string; country: string; method?: number; date?: string }): Promise<{ timings: Timings; timezone?: string; dateOriginal?: any; metaOriginal?: any }> {
     const { city, country, method = 2, date } = params;
     try {
       let url = `${this.baseUrl}/timingsByCity`;
       const query: any = { city, country, method };
       if (date) query.date = date;
       const { data } = await axios.get(url, { params: query, timeout: 10000, headers: { Accept: 'application/json' } });
-      const timings = data?.data?.timings || {};
-      const tz = data?.data?.meta?.timezone || undefined;
+      const payload = data?.data || {};
+      const timings = payload?.timings || {};
+      const tz = payload?.meta?.timezone || undefined;
       const normalized: Timings = {
         Fajr: this.normalizeTime(timings.Fajr),
         Dhuhr: this.normalizeTime(timings.Dhuhr),
@@ -67,7 +68,7 @@ export class PrayerService {
         Maghrib: this.normalizeTime(timings.Maghrib),
         Isha: this.normalizeTime(timings.Isha),
       };
-      return { timings: normalized, timezone: tz };
+      return { timings: normalized, timezone: tz, dateOriginal: payload?.date, metaOriginal: payload?.meta };
     } catch (error: any) {
       this.logger.error(`Failed to fetch prayer times: ${error?.message}`);
       if (axios.isAxiosError(error)) {
@@ -143,28 +144,37 @@ export class PrayerService {
       adj,
     );
 
+    // Fetch official date payload from AlAdhan (especially for Makkah)
+    let datePayload: any | undefined;
+    try {
+      const { dateOriginal } = await this.fetchFromApi({ city, country, method, date: dateYMD });
+      datePayload = dateOriginal;
+    } catch {}
+
+    const computedHijri = (() => {
+      const m = moment(raw.date, 'YYYY-MM-DD');
+      const hijriDay = m.date();
+      const hijriMonthNumber = m.month() + 1;
+      const hijriYear = m.year();
+      const monthEn = m.clone().locale('en').format('iMMMM');
+      const weekdayAr = m.clone().locale('ar').format('dddd');
+      return {
+        readable: raw.date,
+        hijri: {
+          day: String(hijriDay).padStart(2, '0'),
+          month: { number: hijriMonthNumber, en: monthEn },
+          year: String(hijriYear),
+          weekday: { ar: weekdayAr },
+        },
+      };
+    })();
+
     return {
       code: 200,
       status: 'OK',
       data: {
         timings: adjusted,
-        date: (() => {
-          const m = moment(raw.date, 'YYYY-MM-DD');
-          const hijriDay = m.date();
-          const hijriMonthNumber = m.month() + 1;
-          const hijriYear = m.year();
-          const monthEn = m.clone().locale('en').format('iMMMM');
-          const weekdayAr = m.clone().locale('ar').format('dddd');
-          return {
-            readable: raw.date,
-            hijri: {
-              day: String(hijriDay).padStart(2, '0'),
-              month: { number: hijriMonthNumber, en: monthEn },
-              year: String(hijriYear),
-              weekday: { ar: weekdayAr },
-            },
-          };
-        })(),
+        date: datePayload || computedHijri,
         meta: { timezone: raw.timezone, method, originalTimings: { Fajr: raw.fajr, Dhuhr: raw.dhuhr, Asr: raw.asr, Maghrib: raw.maghrib, Isha: raw.isha } },
       },
     };
