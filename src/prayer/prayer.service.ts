@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { PrayerTime } from './entities/prayer-time.entity';
 import { PrayerTimeAdjustment } from './entities/prayer-time-adjustment.entity';
 import { UpdatePrayerAdjustmentDto } from './dto/update-prayer-adjustment.dto';
+import * as moment from 'moment';
+import 'moment-hijri';
 
 type Timings = { Fajr: string; Dhuhr: string; Asr: string; Maghrib: string; Isha: string };
 
@@ -146,7 +148,23 @@ export class PrayerService {
       status: 'OK',
       data: {
         timings: adjusted,
-        date: { readable: raw.date },
+        date: (() => {
+          const m = moment(raw.date, 'YYYY-MM-DD');
+          const hijriDay = m.date();
+          const hijriMonthNumber = m.month() + 1;
+          const hijriYear = m.year();
+          const monthEn = m.clone().locale('en').format('iMMMM');
+          const weekdayAr = m.clone().locale('ar').format('dddd');
+          return {
+            readable: raw.date,
+            hijri: {
+              day: String(hijriDay).padStart(2, '0'),
+              month: { number: hijriMonthNumber, en: monthEn },
+              year: String(hijriYear),
+              weekday: { ar: weekdayAr },
+            },
+          };
+        })(),
         meta: { timezone: raw.timezone, method, originalTimings: { Fajr: raw.fajr, Dhuhr: raw.dhuhr, Asr: raw.asr, Maghrib: raw.maghrib, Isha: raw.isha } },
       },
     };
