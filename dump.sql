@@ -829,7 +829,7 @@ CREATE TABLE public.users (
     niveau character varying(50),
     motivation text,
     password character varying NOT NULL,
-    role public.users_role_enum DEFAULT 'member'::public.users_role_enum NOT NULL,
+    role public.users_role_enum DEFAULT 'visitor'::public.users_role_enum NOT NULL,
     status public.users_status_enum DEFAULT 'pending'::public.users_status_enum NOT NULL,
     avatar character varying(255),
     bio text,
