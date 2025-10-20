@@ -133,7 +133,7 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
 
     const user = this.usersRepository.create({
       ...createUserDto,
-      role: createUserDto.role || UserRole.VISITOR,
+      role: createUserDto.role || UserRole.MEMBER,
       status: createUserDto.status || UserStatus.PENDING,
       isActive: true,
       date_inscription: new Date(),

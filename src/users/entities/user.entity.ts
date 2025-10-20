@@ -27,7 +27,6 @@ import { Pole } from "../../academics/entities/pole.entity";
 import { Filiere } from "../../academics/entities/filiere.entity";
 
 export enum UserRole {
-  VISITOR = "visitor",
   MEMBER = "member",
   ADMIN = "admin",
   SCHOLAR = "scholar",
@@ -102,7 +101,7 @@ export class User {
   @Column({
     type: "enum",
     enum: UserRole,
-    default: UserRole.VISITOR,
+    default: UserRole.MEMBER,
   })
   role: UserRole;
 

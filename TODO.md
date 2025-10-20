@@ -1,13 +1,13 @@
-# TODO: Make Email Sending Functional
+# TODO: Supprimer le rôle "visitor" et gérer les utilisateurs non connectés
 
-## Tasks
-- [x] Add EmailModule to app.module.ts imports
-- [x] Add EmailModule to contributions.module.ts imports
-- [x] Inject MailService into ContributionsService
-- [x] Implement sendContributionReminders method in ContributionsService to send reminder emails
-- [ ] Test email sending (requires SMTP config in .env)
-- [x] Run build to check for compilation errors (successful)
+## Tâches à effectuer
+- [ ] Supprimer VISITOR de l'enum UserRole dans user.entity.ts
+- [ ] Changer la valeur par défaut de role à MEMBER dans user.entity.ts
+- [ ] Mettre à jour users.service.ts pour utiliser MEMBER comme valeur par défaut lors de la création
+- [ ] Tester les nouvelles inscriptions
+- [ ] Vérifier que les guards d'authentification fonctionnent pour les utilisateurs non connectés
 
-## Notes
-- Users service already has email sending implemented for role/status updates
-- SMTP config needed: email.host, email.port, email.user, email.pass, email.from
+## État actuel
+- Le rôle VISITOR est défini mais ne correspond à aucun utilisateur réel
+- Les utilisateurs non connectés sont déjà gérés par les guards (ForbiddenException)
+- Le frontend devra afficher l'état non connecté avec bouton de connexion
