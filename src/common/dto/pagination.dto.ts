@@ -1,87 +1,57 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsPositive, Min, Max } from 'class-validator';
+import { IsOptional, IsPositive, Min, Max, IsString } from 'class-validator';
 
 export class PaginationDto {
-  @ApiPropertyOptional({
-    description: 'Page number (starts from 1)',
-    minimum: 1,
-    default: 1,
-    example: 1,
-  })
+  @ApiPropertyOptional({ description: 'Page number (starts from 1)', minimum: 1, default: 1, example: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsPositive()
   page?: number = 1;
 
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    minimum: 1,
-    maximum: 100,
-    default: 10,
-    example: 10,
-  })
+  @ApiPropertyOptional({ description: 'Number of items per page', minimum: 1, maximum: 100, default: 20, example: 20 })
   @IsOptional()
   @Type(() => Number)
   @Min(1)
   @Max(100)
-  limit?: number = 10;
+  limit?: number = 20;
+
+  @ApiPropertyOptional({ description: 'Global search term', required: false })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'Sort expression (e.g., "createdAt:desc")', required: false })
+  @IsOptional()
+  @IsString()
+  sort?: string;
 
   get skip(): number {
     return (this.page - 1) * this.limit;
   }
 }
 
-export class PaginationResponseDto<T> {
-  @ApiPropertyOptional({
-    description: 'Array of items',
-    type: [Object],
-  })
-  data: T[];
-
-  @ApiPropertyOptional({
-    description: 'Total number of items',
-    example: 100,
-  })
-  total: number;
-
-  @ApiPropertyOptional({
-    description: 'Current page number',
-    example: 1,
-  })
+export interface PaginatedMeta {
   page: number;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    example: 10,
-  })
   limit: number;
-
-  @ApiPropertyOptional({
-    description: 'Total number of pages',
-    example: 10,
-  })
-  totalPages: number;
-
-  @ApiPropertyOptional({
-    description: 'Whether there is a next page',
-    example: true,
-  })
+  total: number;
   hasNext: boolean;
+  hasPrev: boolean;
+}
 
-  @ApiPropertyOptional({
-    description: 'Whether there is a previous page',
-    example: false,
-  })
-  hasPrevious: boolean;
+export class PaginationResponseDto<T> {
+  data: T[];
+  meta: PaginatedMeta;
 
   constructor(data: T[], total: number, page: number, limit: number) {
+    const totalPages = Math.ceil(total / limit || 1);
     this.data = data;
-    this.total = total;
-    this.page = page;
-    this.limit = limit;
-    this.totalPages = Math.ceil(total / limit);
-    this.hasNext = page < this.totalPages;
-    this.hasPrevious = page > 1;
+    this.meta = {
+      page,
+      limit,
+      total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    };
   }
 }

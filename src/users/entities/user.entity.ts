@@ -49,6 +49,9 @@ export enum UserStatus {
 @Entity("users")
 @Index(["email"], { unique: true })
 @Index(["telephone"], { unique: true, where: "telephone IS NOT NULL" })
+@Index(["role"]) 
+@Index(["status"]) 
+@Index(["createdAt"])
 export class User {
   @PrimaryGeneratedColumn("uuid")
   id: string;

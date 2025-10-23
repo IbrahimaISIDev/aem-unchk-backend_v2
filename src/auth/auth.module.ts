@@ -17,6 +17,7 @@ import { Eno } from '../academics/entities/eno.entity';
 import { Pole } from '../academics/entities/pole.entity';
 import { Filiere } from '../academics/entities/filiere.entity';
 import { PasswordReset } from './entities/password-reset.entity';
+import { MeController } from './me.controller';
 
 @Module({
   imports: [
@@ -35,7 +36,7 @@ import { PasswordReset } from './entities/password-reset.entity';
     NotificationsModule,
     EmailModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, MeController],
   providers: [
     AuthService,
     JwtStrategy,

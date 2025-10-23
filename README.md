@@ -275,3 +275,21 @@ test*          # Jest (unit/e2e)
 
 ## Licence
 UNLICENSED — usage interne AEM UNCHK.
+
+---
+
+## Admin features (RBAC, pagination, exports, soft delete, audit)
+- RBAC exposure: `GET /api/auth/me` returns `{ user, role, permissions, allowedCards, routes }` for frontend gating.
+- Pagination: All list endpoints accept `page`, `limit` (default 20), optional `search` and `sort`. Normalized response shape:
+```
+{ data: T[], meta: { page, limit, total, hasNext, hasPrev } }
+```
+- Exports: `GET /api/admin/{users|media|events|products}/export?format=csv|xlsx&...filters` streams CSV/XLSX with UTF-8 BOM (CSV). Filenames follow `{module}_export_YYYY-MM-DD_HH-mm-SS_[role|statut|date].(csv|xlsx)`.
+- Soft delete + Trash:
+  - `GET /api/admin/{module}/trash` — list soft-deleted items
+  - `POST /api/admin/{module}/:id/restore` — restore
+  - `DELETE /api/admin/{module}/:id/purge` — permanent delete (Admin only)
+- Audit logs: Admin actions recorded in `audit_logs` with `actorId`, `action`, `entityType`, `entityId`, `before`, `after`, `status`, `ip`, `userAgent`, `context`, `createdAt`. Retention job purges logs older than 24 months daily at 03:00.
+- Admin routes for dashboard cards exist and return 200: `/api/admin`, `/api/admin/users`, `/api/admin/media`, `/api/admin/events`, `/api/admin/products`.
+
+Swagger documentation is updated for new endpoints and paginated responses.

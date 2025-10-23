@@ -408,4 +408,90 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
       usersByStatus,
     };
   }
+
+  async findTrashed(paginationDto: PaginationDto & any): Promise<PaginationResponseDto<User>> {
+    const { page = 1, limit = 20 } = paginationDto;
+    const skip = (page - 1) * limit;
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .withDeleted()
+      .leftJoinAndSelect('user.eno', 'eno')
+      .leftJoinAndSelect('user.pole', 'pole')
+      .leftJoinAndSelect('user.filiereRef', 'filiere')
+      .where('user.deletedAt IS NOT NULL')
+      .orderBy('user.deletedAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    const { search, nom, prenom, email, telephone, role, status } = paginationDto as any;
+
+    if (search) {
+      qb.andWhere(
+        '(user.nom ILIKE :q OR user.prenom ILIKE :q OR user.email ILIKE :q OR user.telephone ILIKE :q)',
+        { q: `%${search}%` },
+      );
+    }
+    if (nom) qb.andWhere('user.nom ILIKE :nom', { nom: `%${nom}%` });
+    if (prenom) qb.andWhere('user.prenom ILIKE :prenom', { prenom: `%${prenom}%` });
+    if (email) qb.andWhere('user.email ILIKE :email', { email: `%${email}%` });
+    if (telephone) qb.andWhere('user.telephone ILIKE :telephone', { telephone: `%${telephone}%` });
+    if (role) qb.andWhere('user.role = :role', { role });
+    if (status) qb.andWhere('user.status = :status', { status });
+
+    const [users, total] = await qb.getManyAndCount();
+    return new PaginationResponseDto(users, total, page, limit);
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.usersRepository.restore(id);
+  }
+
+  async purge(id: string): Promise<void> {
+    await this.usersRepository.delete(id);
+  }
+
+  async exportAll(filters: any): Promise<any[]> {
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.eno', 'eno')
+      .leftJoinAndSelect('user.pole', 'pole')
+      .leftJoinAndSelect('user.filiereRef', 'filiere');
+
+    const { search, nom, prenom, email, telephone, role, status, createdFrom, createdTo } = filters || {};
+
+    if (search) {
+      qb.andWhere(
+        '(user.nom ILIKE :q OR user.prenom ILIKE :q OR user.email ILIKE :q OR user.telephone ILIKE :q OR eno.name ILIKE :q OR pole.name ILIKE :q OR filiere.name ILIKE :q)',
+        { q: `%${search}%` },
+      );
+    }
+    if (nom) qb.andWhere('user.nom ILIKE :nom', { nom: `%${nom}%` });
+    if (prenom) qb.andWhere('user.prenom ILIKE :prenom', { prenom: `%${prenom}%` });
+    if (email) qb.andWhere('user.email ILIKE :email', { email: `%${email}%` });
+    if (telephone) qb.andWhere('user.telephone ILIKE :telephone', { telephone: `%${telephone}%` });
+    if (role) qb.andWhere('user.role = :role', { role });
+    if (status) qb.andWhere('user.status = :status', { status });
+    if (createdFrom && createdTo) {
+      qb.andWhere('user.createdAt BETWEEN :from AND :to', { from: new Date(createdFrom), to: new Date(createdTo) });
+    } else if (createdFrom) {
+      qb.andWhere('user.createdAt >= :from', { from: new Date(createdFrom) });
+    } else if (createdTo) {
+      qb.andWhere('user.createdAt <= :to', { to: new Date(createdTo) });
+    }
+
+    const users = await qb.orderBy('user.createdAt', 'DESC').getMany();
+    return users.map((u) => ({
+      id: u.id,
+      nom: u.nom,
+      prenom: u.prenom,
+      email: u.email,
+      telephone: u.telephone,
+      role: u.role,
+      status: u.status,
+      createdAt: u.createdAt,
+      eno: (u as any).eno?.name || u.eno_rattachement,
+      pole: (u as any).pole?.name,
+      filiere: (u as any).filiereRef?.name || u.filiere,
+    }));
+  }
 }

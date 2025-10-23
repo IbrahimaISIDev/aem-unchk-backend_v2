@@ -25,7 +25,7 @@ export class MarketplaceService {
   ) {}
 
   // Products
-  async listProducts({ page = 1, limit = 10 }: PaginationDto, filters?: { category?: string; search?: string }) {
+  async listProducts({ page = 1, limit = 20 }: PaginationDto, filters?: { category?: string; search?: string }) {
     const skip = (page - 1) * limit;
     let qb = this.productRepo.createQueryBuilder('p').where('p.status = :st', { st: ProductStatus.ACTIVE });
     if (filters?.category) qb = qb.andWhere('p.category = :cat', { cat: filters.category });
@@ -69,7 +69,7 @@ export class MarketplaceService {
   }
 
   // Reviews
-  async listReviews({ page = 1, limit = 10 }: PaginationDto, productId?: string) {
+  async listReviews({ page = 1, limit = 20 }: PaginationDto, productId?: string) {
     const skip = (page - 1) * limit;
     let qb = this.reviewRepo.createQueryBuilder('r');
     if (productId) qb = qb.andWhere('r.productId = :pid', { pid: productId });
@@ -147,7 +147,7 @@ export class MarketplaceService {
 
   // Orders (simplifié)
   async listOrders(user: User, pagination: PaginationDto) {
-    const { page = 1, limit = 10 } = pagination;
+    const { page = 1, limit = 20 } = pagination;
     const skip = (page - 1) * limit;
     const [data, total] = await this.orderRepo
       .createQueryBuilder('o')
@@ -157,5 +157,25 @@ export class MarketplaceService {
       .take(limit)
       .getManyAndCount();
     return new PaginationResponseDto<Order>(data, total, page, limit);
+  }
+
+  async listProductsTrashed(pagination: PaginationDto, filters?: { category?: string; search?: string }) {
+    const { page = 1, limit = 20, skip } = pagination;
+    let qb = this.productRepo.createQueryBuilder('p').withDeleted().where('p.deletedAt IS NOT NULL');
+    if (filters?.category) qb = qb.andWhere('p.category = :cat', { cat: filters.category });
+    if (filters?.search) qb = qb.andWhere('(p.name ILIKE :q OR p.description ILIKE :q)', { q: `%${filters.search}%` });
+    const [data, total] = await qb.orderBy('p.deletedAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+    return new PaginationResponseDto<Product>(data, total, page, limit);
+  }
+
+  async restoreProduct(id: string) { await this.productRepo.restore(id); }
+  async purgeProduct(id: string) { await this.productRepo.delete(id); }
+
+  async exportProducts(filters?: { category?: string; search?: string }) {
+    let qb = this.productRepo.createQueryBuilder('p');
+    if (filters?.category) qb = qb.andWhere('p.category = :cat', { cat: filters.category });
+    if (filters?.search) qb = qb.andWhere('(p.name ILIKE :q OR p.description ILIKE :q)', { q: `%${filters.search}%` });
+    const items = await qb.orderBy('p.createdAt', 'DESC').getMany();
+    return items.map((p) => ({ id: p.id, name: p.name, price: p.price, status: p.status, stock: p.stock, category: p.category, createdAt: p.createdAt }));
   }
 }

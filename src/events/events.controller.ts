@@ -36,11 +36,12 @@ export class EventsController {
   @ApiQuery({ name: 'type', required: false, enum: EventType })
   @ApiQuery({ name: 'search', required: false, type: String })
   async findAll(
-    @Query() { page = 1, limit = 10 }: PaginationDto,
+    @Query() pagination: PaginationDto,
     @Query('status') status?: 'upcoming' | 'ongoing' | 'completed',
     @Query('type') type?: EventType,
     @Query('search') search?: string,
   ): Promise<PaginationResponseDto<Event>> {
+    const { page = 1, limit = 20 } = pagination;
     const res = await this.eventsService.findAll(page, limit, { status, type, search });
     return new PaginationResponseDto(res.data, res.total, res.page, res.limit);
   }

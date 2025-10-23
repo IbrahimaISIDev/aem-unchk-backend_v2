@@ -240,6 +240,56 @@ export class MediaService {
     });
   }
 
+  async findTrashed(pagination: PaginationDto, filters?: any): Promise<PaginationResponseDto<Media>> {
+    const { page = 1, limit = 20, skip } = pagination;
+    let qb = this.mediaRepository
+      .createQueryBuilder('media')
+      .withDeleted()
+      .leftJoinAndSelect('media.author', 'author')
+      .leftJoinAndSelect('media.category', 'category')
+      .where('media.deletedAt IS NOT NULL');
+
+    if (filters?.type) qb = qb.andWhere('media.type = :type', { type: filters.type });
+    if (filters?.status) qb = qb.andWhere('media.status = :status', { status: filters.status });
+    if (filters?.categoryId) qb = qb.andWhere('media.categoryId = :categoryId', { categoryId: filters.categoryId });
+    if (filters?.search) qb = qb.andWhere('(media.title ILIKE :q OR media.description ILIKE :q)', { q: `%${filters.search}%` });
+
+    const [data, total] = await qb.orderBy('media.deletedAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+    return new PaginationResponseDto(data, total, page, limit);
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.mediaRepository.restore(id);
+  }
+
+  async purge(id: string): Promise<void> {
+    await this.mediaRepository.delete(id);
+  }
+
+  async exportAll(filters?: any): Promise<any[]> {
+    let qb = this.mediaRepository
+      .createQueryBuilder('media')
+      .leftJoinAndSelect('media.author', 'author')
+      .leftJoinAndSelect('media.category', 'category');
+
+    if (filters?.type) qb = qb.andWhere('media.type = :type', { type: filters.type });
+    if (filters?.status) qb = qb.andWhere('media.status = :status', { status: filters.status });
+    if (filters?.categoryId) qb = qb.andWhere('media.categoryId = :categoryId', { categoryId: filters.categoryId });
+    if (filters?.search) qb = qb.andWhere('(media.title ILIKE :q OR media.description ILIKE :q)', { q: `%${filters.search}%` });
+
+    const items = await qb.orderBy('media.createdAt', 'DESC').getMany();
+    return items.map((m) => ({
+      id: m.id,
+      title: m.title,
+      type: m.type,
+      status: m.status,
+      isPublic: m.isPublic,
+      category: (m as any).category?.name,
+      author: (m as any).author?.email,
+      createdAt: (m as any).createdAt,
+    }));
+  }
+
   async moderateMedia(id: string, status: MediaStatus, user: User): Promise<Media> {
     // Seuls les admins et scholars peuvent modérer
     if (![UserRole.ADMIN, UserRole.SCHOLAR].includes(user.role)) {

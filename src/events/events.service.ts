@@ -92,4 +92,24 @@ export class EventsService {
     event.currentParticipants = Math.max(0, (event.currentParticipants || 0) - 1);
     await this.eventRepo.save(event);
   }
+
+  async findTrashed(page = 1, limit = 20, filters?: { type?: EventType; search?: string }) {
+    const skip = (page - 1) * limit;
+    let qb = this.eventRepo.createQueryBuilder('event').withDeleted().where('event.deletedAt IS NOT NULL');
+    if (filters?.type) qb = qb.andWhere('event.type = :type', { type: filters.type });
+    if (filters?.search) qb = qb.andWhere('(event.title ILIKE :q OR event.description ILIKE :q)', { q: `%${filters.search}%` });
+    const [data, total] = await qb.orderBy('event.deletedAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+    return { data, total, page, limit };
+  }
+
+  async restore(id: string) { await this.eventRepo.restore(id); }
+  async purge(id: string) { await this.eventRepo.delete(id); }
+
+  async exportAll(filters?: { type?: EventType; search?: string }) {
+    let qb = this.eventRepo.createQueryBuilder('event');
+    if (filters?.type) qb = qb.andWhere('event.type = :type', { type: filters.type });
+    if (filters?.search) qb = qb.andWhere('(event.title ILIKE :q OR event.description ILIKE :q)', { q: `%${filters.search}%` });
+    const events = await qb.orderBy('event.date', 'DESC').getMany();
+    return events.map((e) => ({ id: e.id, title: e.title, type: e.type, status: e.status, date: e.date, city: e.city, isPublic: e.isPublic }));
+  }
 }
