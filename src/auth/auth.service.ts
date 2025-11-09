@@ -491,7 +491,10 @@ export class AuthService {
     const text = `Vous avez demandé la réinitialisation de votre mot de passe. Ce lien expire dans ${ttlMinutes} minutes: ${resetUrl}`;
     const html = `<p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Ce lien expire dans <strong>${ttlMinutes} minutes</strong>.</p><p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>`;
 
-    await this.mail.send(user.email, subject, text, html);
+    this.mail
+      .send(user.email, subject, text, html)
+      .then(() => {})
+      .catch(() => {});
 
     return {
       message: "Si cet email existe, un lien de réinitialisation a été envoyé",
