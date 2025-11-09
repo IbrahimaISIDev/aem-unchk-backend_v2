@@ -17,11 +17,17 @@ export class MailService {
       this.config.get<string>("email.from") || "noreply@islamic-platform.com";
 
     if (host && port) {
+      // For Gmail on 587, enforce STARTTLS (secure=false + requireTLS=true)
+      // Add explicit timeouts to avoid hanging connections
       this.transporter = nodemailer.createTransport({
         host,
         port,
-        secure: port === 465,
+        secure: port === 465, // if you switch to 465, this becomes true (implicit TLS)
+        requireTLS: port === 587,
         auth: user ? { user, pass } : undefined,
+        connectionTimeout: 15000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
       } as any);
       // Verify SMTP connectivity on startup to surface any auth/TLS issues early
       this.transporter

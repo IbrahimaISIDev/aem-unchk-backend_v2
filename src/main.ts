@@ -1,4 +1,5 @@
 // src/main.ts
+import * as dns from 'node:dns';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +14,9 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 // Swagger
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
+
+// Prefer IPv4 first to avoid IPv6 connection issues with some SMTP providers
+dns.setDefaultResultOrder('ipv4first');
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
