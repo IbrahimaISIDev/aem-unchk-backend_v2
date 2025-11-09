@@ -8,6 +8,7 @@ import { GenerateContributionsDto } from "./dto/generate-contributions.dto";
 import { MarkPaidDto } from "./dto/mark-paid.dto";
 import { UsersService } from "../users/users.service";
 import { MailService } from "../email/email.service";
+import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class ContributionsService {
@@ -115,5 +116,10 @@ export class ContributionsService {
       sentEmails: sentCount,
       totalFound: contributions.length,
     };
+  }
+
+  @Cron("0 8 * * *")
+  async autoSendDailyReminders() {
+    await this.sendContributionReminders({ daysBeforeDue: 7 });
   }
 }

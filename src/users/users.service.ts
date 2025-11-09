@@ -245,6 +245,22 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
         type: NotificationType.SUCCESS,
         priority: NotificationPriority.NORMAL,
       });
+    } else if (prevStatus !== status) {
+      // Autres changements de statut: informer l'utilisateur
+      const appUrl = this.config.get<string>('frontend.url');
+      await this.mail.send(
+        user.email,
+        'Mise à jour du statut de votre compte',
+        `Bonjour ${user.nom}, le statut de votre compte a été mis à jour: ${prevStatus} → ${status}.`,
+        `<p>Bonjour ${user.nom},</p><p>Le statut de votre compte a été mis à jour&nbsp;: <strong>${prevStatus}</strong> → <strong>${status}</strong>.</p>${appUrl ? `<p><a href="${appUrl}">Accéder à la plateforme</a></p>` : ''}`,
+      );
+      await this.notifications.create({
+        userId: user.id,
+        title: 'Statut mis à jour',
+        message: `Votre statut a été modifié: ${prevStatus} → ${status}`,
+        type: NotificationType.INFO,
+        priority: NotificationPriority.NORMAL,
+      });
     }
 
     return saved;
