@@ -117,8 +117,9 @@ export class RegisterDto {
   })
   @IsString({ message: 'L\'année de promotion doit être une chaîne de caractères' })
   @IsNotEmpty({ message: 'L\'année de promotion est requise' })
-  @Matches(/^\d{4}(-\d{4})?$/, {
-    message: 'Format d\'année invalide. Utilisez YYYY ou YYYY-YYYY (ex: 2024 ou 2024-2025)',
+  @Matches(/^(?:\d{4}(?:[-\/]\d{4})?|P\d{1,2}|Promotion\s*\d{1,2})$/i, {
+    message:
+      'Format invalide. Formats acceptés: YYYY, YYYY-YYYY, YYYY/YYYY, P10, Promotion 10',
   })
   annee_promotion: string;
 
