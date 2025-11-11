@@ -152,4 +152,24 @@ export class MarketplaceController {
   async listOrders(@CurrentUser() user: User, @Query() pagination: PaginationDto): Promise<PaginationResponseDto<Order>> {
     return this.service.listOrders(user, pagination);
   }
+
+  @Post('orders')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Créer une commande depuis le panier de l’utilisateur' })
+  async createOrder(@Body() dto: any, @CurrentUser() user: User) {
+    return this.service.createOrder(user, dto);
+  }
+
+  @Post('orders/:id/pay')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Simuler le paiement d’une commande' })
+  async payOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: { method?: string; transactionRef?: string },
+    @CurrentUser() user: User,
+  ) {
+    return this.service.payOrder(id, user, dto);
+  }
 }

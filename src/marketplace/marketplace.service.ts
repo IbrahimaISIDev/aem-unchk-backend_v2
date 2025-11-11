@@ -34,6 +34,135 @@ export class MarketplaceService {
     return new PaginationResponseDto<Product>(data, total, page, limit);
   }
 
+  // Admin Orders
+  async listAllOrders({ page = 1, limit = 20 }: PaginationDto, filters?: { status?: OrderStatus; paymentStatus?: PaymentStatus }) {
+    const skip = (page - 1) * limit;
+    let qb = this.orderRepo.createQueryBuilder('o').leftJoinAndSelect('o.items', 'items').leftJoinAndSelect('o.user', 'user');
+    if (filters?.status) qb = qb.andWhere('o.status = :st', { st: filters.status });
+    if (filters?.paymentStatus) qb = qb.andWhere('o.paymentStatus = :ps', { ps: filters.paymentStatus });
+    const [data, total] = await qb.orderBy('o.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+    return new PaginationResponseDto<Order>(data, total, page, limit);
+  }
+
+  async updateOrderStatus(id: string, status: OrderStatus) {
+    const order = await this.orderRepo.findOne({ where: { id } });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    order.status = status;
+    return this.orderRepo.save(order);
+  }
+
+  async updatePaymentStatus(id: string, paymentStatus: PaymentStatus) {
+    const order = await this.orderRepo.findOne({ where: { id } });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    order.paymentStatus = paymentStatus;
+    if (paymentStatus === PaymentStatus.PAID && !order.paidAt) order.paidAt = new Date();
+    return this.orderRepo.save(order);
+  }
+
+  async payOrder(orderId: string, user: User, dto?: { method?: string; transactionRef?: string }) {
+    const order = await this.orderRepo.findOne({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Commande introuvable');
+    if (order.userId !== user.id && user.role !== UserRole.ADMIN) throw new ForbiddenException();
+
+    order.paymentStatus = PaymentStatus.PAID;
+    order.status = OrderStatus.CONFIRMED;
+    order.paidAt = new Date();
+    order.paymentMethod = (dto?.method as any) ?? order.paymentMethod;
+    order.paymentTransactionId = dto?.transactionRef || `SIM-${Date.now()}`;
+
+    return this.orderRepo.save(order);
+  }
+
+  async createOrder(user: User, dto: any) {
+    const cart = await this.getOrCreateCart(user.id);
+    if (!cart.items || cart.items.length === 0) {
+      throw new NotFoundException('Panier vide');
+    }
+
+    // Calcul des totaux
+    const subtotal = cart.items.reduce((sum, it) => sum + it.totalPrice, 0);
+    const shippingCost = cart.items.reduce((sum, it) => {
+      const p = it.product;
+      const requires = Boolean(p?.requiresShipping);
+      const ship = Number(p?.shippingCost || 0);
+      return sum + (requires ? ship * it.quantity : 0);
+    }, 0);
+    const taxAmount = 0; // Pas de TVA pour l'instant
+    const discountAmount = 0;
+    const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
+
+    // Générer un numéro de commande simple
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const orderNumber = `CMD-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${now.getTime()}`;
+
+    // Créer l'entité Order
+    const order = this.orderRepo.create({
+      orderNumber,
+      subtotal,
+      shippingCost,
+      taxAmount,
+      discountAmount,
+      totalAmount,
+      userId: user.id,
+      shippingAddress: dto?.shippingAddress,
+      shippingCity: dto?.shippingCity,
+      shippingPostalCode: dto?.shippingPostalCode,
+      shippingCountry: dto?.shippingCountry,
+      shippingPhone: dto?.shippingPhone,
+      billingAddress: dto?.billingAddress,
+      billingCity: dto?.billingCity,
+      billingPostalCode: dto?.billingPostalCode,
+      billingCountry: dto?.billingCountry,
+      billingPhone: dto?.billingPhone,
+      notes: dto?.notes,
+      metadata: dto?.metadata,
+    });
+
+    // Transformer les items du panier en items de commande
+    order.items = cart.items.map((ci) => {
+      const p = ci.product;
+      const oi = this.orderItemRepo.create({
+        productId: p.id,
+        quantity: ci.quantity,
+        price: ci.price,
+        totalPrice: ci.totalPrice,
+        productName: p.name,
+        productDescription: p.description,
+        productImage: Array.isArray(p.images) && p.images.length ? p.images[0] : undefined,
+        productMetadata: {
+          category: p.category,
+          brand: p.brand,
+          model: p.model,
+          isDigital: p.isDigital,
+        },
+      });
+      return oi;
+    });
+
+    // Sauvegarder la commande (cascade pour items)
+    const saved = await this.orderRepo.save(order);
+
+    // Décrémenter le stock des produits
+    for (const ci of cart.items) {
+      const p = await this.productRepo.findOne({ where: { id: ci.productId } });
+      if (p) {
+        p.stock = Math.max(0, Number(p.stock || 0) - ci.quantity);
+        await this.productRepo.save(p);
+      }
+    }
+
+    // Vider le panier
+    if (cart.items?.length) {
+      await this.cartItemRepo.remove(cart.items);
+    }
+    cart.totalAmount = 0;
+    cart.itemCount = 0;
+    await this.cartRepo.save(cart);
+
+    return saved;
+  }
+
   async uploadProductImages(id: string, files: Express.Multer.File[], user: User) {
     const p = await this.getProduct(id);
     if (user.role !== UserRole.ADMIN && p.sellerId !== user.id) throw new ForbiddenException();
