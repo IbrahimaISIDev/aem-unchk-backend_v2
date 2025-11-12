@@ -39,7 +39,7 @@ export class AnalyticsController {
 
   @Get('metrics')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Récupérer des métriques agrégées' })
   async metrics() {

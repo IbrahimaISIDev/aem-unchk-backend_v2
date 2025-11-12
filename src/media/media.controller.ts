@@ -358,6 +358,22 @@ export class MediaController {
     return this.mediaService.downloadMedia(id, user);
   }
 
+  @Get('statistics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SEC_GENERAL, UserRole.TECH_MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Statistiques globales des médias',
+    description: 'Retourne des statistiques agrégées sur tous les médias (admin uniquement)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistiques récupérées avec succès',
+  })
+  async getMediaStatistics() {
+    return this.mediaService.getStatistics();
+  }
+
   @Patch(':id/moderate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SCHOLAR)
