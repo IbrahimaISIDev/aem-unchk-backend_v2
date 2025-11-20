@@ -65,6 +65,7 @@ export default () => ({
       process.env.EMAIL_FROM ||
       process.env.SMTP_FROM ||
       "noreply@islamic-platform.com",
+    resendApiKey: process.env.RESEND_API_KEY || "",
   },
 
   admin: {
