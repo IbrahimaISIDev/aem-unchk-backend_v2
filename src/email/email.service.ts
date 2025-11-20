@@ -1,49 +1,45 @@
 import { Injectable, Logger } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 import { ConfigService } from "@nestjs/config";
+import { Resend } from "resend";
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private resend: Resend | null = null;
   private from: string;
+  private resendEnabled: boolean = false;
 
   constructor(private readonly config: ConfigService) {
     const host = this.config.get<string>("email.host");
     const port = this.config.get<number>("email.port");
     const user = this.config.get<string>("email.user");
     const pass = this.config.get<string>("email.pass");
+    const resendApiKey = this.config.get<string>("email.resendApiKey");
     this.from =
       this.config.get<string>("email.from") || "noreply@islamic-platform.com";
 
+    // Configuration SMTP (méthode principale)
     if (host && port && user && pass) {
-      // Configuration optimisée pour Gmail avec App Password
       const transportOptions: any = {
         host,
         port,
-        auth: {
-          user,
-          pass,
-        },
-        // Timeouts plus longs pour éviter les erreurs de connexion
+        auth: { user, pass },
         connectionTimeout: 30000,
         greetingTimeout: 20000,
         socketTimeout: 30000,
       };
 
-      // Configuration spécifique selon le port
       if (port === 465) {
-        // SSL/TLS direct (recommandé pour Gmail)
         transportOptions.secure = true;
       } else if (port === 587) {
-        // STARTTLS
         transportOptions.secure = false;
         transportOptions.requireTLS = true;
       }
 
       this.transporter = nodemailer.createTransport(transportOptions);
 
-      // Vérifier la connectivité SMTP au démarrage
       this.transporter
         .verify()
         .then(() => {
@@ -52,14 +48,32 @@ export class MailService {
           );
         })
         .catch((e) => {
-          this.logger.error(`❌ SMTP verify failed: ${e.message}`, e.stack);
-          this.logger.warn(
-            "Assurez-vous d'utiliser un App Password Gmail si vous utilisez Gmail"
+          this.logger.warn(`⚠️  SMTP verification failed: ${e.message}`);
+          this.logger.log(
+            "SMTP will be used with fallback to Resend if configured"
           );
         });
     } else {
       this.logger.warn(
-        "⚠️  MailService disabled: missing SMTP configuration (host, port, user, or pass)"
+        "⚠️  SMTP not configured (missing host, port, user, or pass)"
+      );
+    }
+
+    // Configuration Resend (méthode de fallback)
+    if (resendApiKey) {
+      this.resend = new Resend(resendApiKey);
+      this.resendEnabled = true;
+      this.logger.log("✅ Resend API configured as fallback email service");
+    } else {
+      this.logger.warn(
+        "⚠️  Resend not configured (missing RESEND_API_KEY). Email fallback disabled."
+      );
+    }
+
+    // Vérification finale
+    if (!this.transporter && !this.resend) {
+      this.logger.error(
+        "❌ No email service configured! Emails will not be sent."
       );
     }
   }
@@ -70,48 +84,98 @@ export class MailService {
     text?: string,
     html?: string
   ) {
-    if (!this.transporter) {
-      this.logger.warn(
-        `⚠️  Email send skipped (no transporter configured). to=${to}, subject="${subject}"`
+    const recipients = Array.isArray(to) ? to.join(",") : to;
+    const recipientsArray = Array.isArray(to) ? to : [to];
+
+    // Vérifier qu'au moins une méthode est disponible
+    if (!this.transporter && !this.resend) {
+      this.logger.error(
+        `❌ No email service available. to=${recipients}, subject="${subject}"`
       );
-      return { sent: false, error: "No transporter configured" };
+      return { sent: false, error: "No email service configured" };
     }
 
-    const recipients = Array.isArray(to) ? to.join(",") : to;
+    // Tentative 1 : SMTP
+    if (this.transporter) {
+      try {
+        this.logger.log(
+          `📧 [SMTP] Attempting to send email to: ${recipients} | subject: "${subject}"`
+        );
 
-    try {
+        const info = await this.transporter.sendMail({
+          from: this.from,
+          to: recipients,
+          subject,
+          text: text || undefined,
+          html: html || undefined,
+        });
+
+        this.logger.log(
+          `✅ [SMTP] Email sent successfully: ${info.messageId} | to=${recipients}`
+        );
+
+        return { sent: true, id: info.messageId, method: "SMTP" };
+      } catch (e: any) {
+        this.logger.warn(
+          `⚠️  [SMTP] Failed to send email: ${e.message} | code: ${e.code || "N/A"}`
+        );
+
+        // Si Resend est disponible, tenter le fallback
+        if (this.resendEnabled && this.resend) {
+          this.logger.log(`🔄 [FALLBACK] Attempting to send via Resend...`);
+          return await this.sendViaResend(
+            recipientsArray,
+            subject,
+            text,
+            html
+          );
+        }
+
+        // Pas de fallback disponible
+        this.logger.error(
+          `❌ [SMTP] Email send failed and no fallback available`
+        );
+        return { sent: false, error: e.message, method: "SMTP" };
+      }
+    }
+
+    // Tentative 2 : Resend uniquement (si SMTP n'est pas configuré)
+    if (this.resendEnabled && this.resend) {
       this.logger.log(
-        `📧 Attempting to send email to: ${recipients} | subject: "${subject}"`
+        `📧 [Resend] Sending email (SMTP not configured) to: ${recipients}`
       );
+      return await this.sendViaResend(recipientsArray, subject, text, html);
+    }
 
-      const info = await this.transporter.sendMail({
+    return { sent: false, error: "No email service available" };
+  }
+
+  private async sendViaResend(
+    to: string[],
+    subject: string,
+    text?: string,
+    html?: string
+  ) {
+    try {
+      const result = await this.resend!.emails.send({
         from: this.from,
-        to: recipients,
+        to,
         subject,
         text: text || undefined,
         html: html || undefined,
       });
 
       this.logger.log(
-        `✅ Email sent successfully: ${info.messageId} | to=${recipients} | subject="${subject}" | response=${(info as any)?.response || "n/a"}`
+        `✅ [Resend] Email sent successfully: ${result.data?.id} | to=${to.join(",")}`
       );
 
-      return { sent: true, id: info.messageId };
+      return { sent: true, id: result.data?.id, method: "Resend" };
     } catch (e: any) {
       this.logger.error(
-        `❌ Email send failed to ${recipients} | subject: "${subject}" | error: ${e.message}`,
+        `❌ [Resend] Email send failed: ${e.message}`,
         e.stack
       );
-
-      // Log des détails supplémentaires pour le débogage
-      if (e.code) {
-        this.logger.error(`Error code: ${e.code}`);
-      }
-      if (e.command) {
-        this.logger.error(`SMTP command: ${e.command}`);
-      }
-
-      return { sent: false, error: e.message };
+      return { sent: false, error: e.message, method: "Resend" };
     }
   }
 }
