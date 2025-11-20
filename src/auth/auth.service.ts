@@ -568,6 +568,44 @@ export class AuthService {
     }
   }
 
+  // 📧 Test d'envoi d'email
+  async testEmail(
+    to: string,
+    subject?: string,
+    message?: string
+  ): Promise<{ success: boolean; message: string; details?: any }> {
+    const emailSubject = subject || "Email de test - AEM UNCHK";
+    const emailText =
+      message ||
+      "Ceci est un email de test pour vérifier la configuration SMTP.";
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Email de Test</h2>
+        <p>${emailText}</p>
+        <hr/>
+        <p style="color: #666; font-size: 12px;">
+          Cet email a été envoyé depuis le système AEM UNCHK pour tester la configuration SMTP.
+        </p>
+      </div>
+    `;
+
+    const result = await this.mail.send(to, emailSubject, emailText, emailHtml);
+
+    if (result.sent) {
+      return {
+        success: true,
+        message: `Email de test envoyé avec succès à ${to}`,
+        details: { messageId: result.id },
+      };
+    } else {
+      return {
+        success: false,
+        message: `Échec de l'envoi de l'email de test`,
+        details: { error: result.error },
+      };
+    }
+  }
+
   // 🔑 Génération des tokens avec logs détaillés
   private async generateTokens(user: User): Promise<{
     access_token: string;
