@@ -9,6 +9,7 @@ export class MailService {
   private transporter: nodemailer.Transporter | null = null;
   private resend: Resend | null = null;
   private from: string;
+  private resendFrom: string;
   private resendEnabled: boolean = false;
 
   constructor(private readonly config: ConfigService) {
@@ -19,6 +20,8 @@ export class MailService {
     const resendApiKey = this.config.get<string>("email.resendApiKey");
     this.from =
       this.config.get<string>("email.from") || "noreply@islamic-platform.com";
+    this.resendFrom =
+      process.env.RESEND_FROM || '"AEM UNCHK" <onboarding@resend.dev>';
 
     // Configuration SMTP (méthode principale)
     if (host && port && user && pass) {
@@ -158,7 +161,7 @@ export class MailService {
   ) {
     try {
       const result = await this.resend!.emails.send({
-        from: this.from,
+        from: this.resendFrom,
         to,
         subject,
         text: text || undefined,
@@ -166,7 +169,7 @@ export class MailService {
       });
 
       this.logger.log(
-        `✅ [Resend] Email sent successfully: ${result.data?.id} | to=${to.join(",")}`
+        `✅ [Resend] Email sent successfully: ${result.data?.id} | to=${to.join(",")} | from=${this.resendFrom}`
       );
 
       return { sent: true, id: result.data?.id, method: "Resend" };
