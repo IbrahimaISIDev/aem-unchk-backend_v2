@@ -426,4 +426,33 @@ export class AuthController {
       message: 'Déconnexion réussie',
     };
   }
+
+  // 📧 Test Email (Admin uniquement)
+  @Post('test-email')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Tester l\'envoi d\'email',
+    description: 'Endpoint de test pour vérifier la configuration SMTP (Admin uniquement)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', example: 'test@example.com' },
+        subject: { type: 'string', example: 'Email de test' },
+        message: { type: 'string', example: 'Ceci est un email de test' },
+      },
+      required: ['to'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email envoyé avec succès',
+  })
+  async testEmail(@Body() body: { to: string; subject?: string; message?: string }) {
+    return this.authService.testEmail(body.to, body.subject, body.message);
+  }
 }

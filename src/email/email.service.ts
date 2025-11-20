@@ -16,32 +16,51 @@ export class MailService {
     this.from =
       this.config.get<string>("email.from") || "noreply@islamic-platform.com";
 
-    if (host && port) {
-      // For Gmail on 587, enforce STARTTLS (secure=false + requireTLS=true)
-      // Add explicit timeouts to avoid hanging connections
-      this.transporter = nodemailer.createTransport({
+    if (host && port && user && pass) {
+      // Configuration optimisée pour Gmail avec App Password
+      const transportOptions: any = {
         host,
         port,
-        secure: port === 465, // if you switch to 465, this becomes true (implicit TLS)
-        requireTLS: port === 587,
-        auth: user ? { user, pass } : undefined,
-        connectionTimeout: 15000,
-        greetingTimeout: 10000,
-        socketTimeout: 20000,
-      } as any);
-      // Verify SMTP connectivity on startup to surface any auth/TLS issues early
+        auth: {
+          user,
+          pass,
+        },
+        // Timeouts plus longs pour éviter les erreurs de connexion
+        connectionTimeout: 30000,
+        greetingTimeout: 20000,
+        socketTimeout: 30000,
+      };
+
+      // Configuration spécifique selon le port
+      if (port === 465) {
+        // SSL/TLS direct (recommandé pour Gmail)
+        transportOptions.secure = true;
+      } else if (port === 587) {
+        // STARTTLS
+        transportOptions.secure = false;
+        transportOptions.requireTLS = true;
+      }
+
+      this.transporter = nodemailer.createTransport(transportOptions);
+
+      // Vérifier la connectivité SMTP au démarrage
       this.transporter
         .verify()
         .then(() => {
           this.logger.log(
-            `SMTP verified: ${host}:${port} as ${user || "anonymous"} | from=${this.from}`
+            `✅ SMTP verified successfully: ${host}:${port} as ${user} | from=${this.from}`
           );
         })
         .catch((e) => {
-          this.logger.error("SMTP verify failed", e as any);
+          this.logger.error(`❌ SMTP verify failed: ${e.message}`, e.stack);
+          this.logger.warn(
+            "Assurez-vous d'utiliser un App Password Gmail si vous utilisez Gmail"
+          );
         });
     } else {
-      this.logger.warn("MailService disabled: missing SMTP host/port");
+      this.logger.warn(
+        "⚠️  MailService disabled: missing SMTP configuration (host, port, user, or pass)"
+      );
     }
   }
 
@@ -53,25 +72,46 @@ export class MailService {
   ) {
     if (!this.transporter) {
       this.logger.warn(
-        `send skipped (no transporter). to=${to}, subject=${subject}`
+        `⚠️  Email send skipped (no transporter configured). to=${to}, subject="${subject}"`
       );
-      return { sent: false };
+      return { sent: false, error: "No transporter configured" };
     }
+
+    const recipients = Array.isArray(to) ? to.join(",") : to;
+
     try {
+      this.logger.log(
+        `📧 Attempting to send email to: ${recipients} | subject: "${subject}"`
+      );
+
       const info = await this.transporter.sendMail({
         from: this.from,
-        to: Array.isArray(to) ? to.join(",") : to,
+        to: recipients,
         subject,
         text: text || undefined,
         html: html || undefined,
       });
+
       this.logger.log(
-        `Email sent: ${info.messageId} | to=${Array.isArray(to) ? to.join(",") : to} | subject="${subject}" | response=${(info as any)?.response || "n/a"}`
+        `✅ Email sent successfully: ${info.messageId} | to=${recipients} | subject="${subject}" | response=${(info as any)?.response || "n/a"}`
       );
+
       return { sent: true, id: info.messageId };
-    } catch (e) {
-      this.logger.error("Email send failed", e as any);
-      return { sent: false, error: (e as any)?.message };
+    } catch (e: any) {
+      this.logger.error(
+        `❌ Email send failed to ${recipients} | subject: "${subject}" | error: ${e.message}`,
+        e.stack
+      );
+
+      // Log des détails supplémentaires pour le débogage
+      if (e.code) {
+        this.logger.error(`Error code: ${e.code}`);
+      }
+      if (e.command) {
+        this.logger.error(`SMTP command: ${e.command}`);
+      }
+
+      return { sent: false, error: e.message };
     }
   }
 }
