@@ -72,6 +72,12 @@ export class CreateEventDto {
   @IsNumber()
   maxParticipants?: number;
 
+  @ApiPropertyOptional({ description: 'URL de la bannière de l\'événement' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  banner?: string;
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   tags?: string[];
@@ -102,7 +108,20 @@ export class UpdateEventDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   location?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string;
 
   @ApiPropertyOptional({ enum: EventType })
   @IsOptional()
@@ -118,6 +137,28 @@ export class UpdateEventDto {
   @IsOptional()
   @IsBoolean()
   isPublic?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isOnline?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  onlineLink?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  maxParticipants?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  banner?: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
