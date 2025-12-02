@@ -10,6 +10,8 @@ import { Media } from '../media/entities/media.entity';
 import { Category } from '../media/entities/category.entity';
 import { Event } from '../events/entities/event.entity';
 import { Activity } from '../events/entities/activity.entity';
+import { Registration } from '../events/entities/registration.entity';
+import { EventDetails } from '../events/entities/event-details.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { NotificationTemplate } from '../notifications/entities/notification-template.entity';
 import { EventLog } from '../analytics/entities/event-log.entity';
@@ -66,6 +68,8 @@ export const dataSourceOptions = (configService?: ConfigService): DataSourceOpti
       Category,
       Event,
       Activity,
+      Registration,
+      EventDetails,
       Notification,
       NotificationTemplate,
       EventLog,
@@ -90,7 +94,12 @@ export const dataSourceOptions = (configService?: ConfigService): DataSourceOpti
       PedagogicActivity,
     ],
 
-    migrations: ['src/database/migrations/*.ts'],
+    migrations: [
+      // Use compiled JS files in production, TS files in development
+      __dirname.includes('dist')
+        ? 'dist/database/migrations/*.js'
+        : 'src/database/migrations/*.ts'
+    ],
   };
 };
 

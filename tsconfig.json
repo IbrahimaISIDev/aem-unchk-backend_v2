@@ -9,28 +9,12 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@/*": ["src/*"],
-      "@/common/*": ["src/common/*"],
-      "@/config/*": ["src/config/*"],
-      "@/auth/*": ["src/auth/*"],
-      "@/users/*": ["src/users/*"],
-      "@/media/*": ["src/media/*"],
-      "@/events/*": ["src/events/*"],
-      "@/notifications/*": ["src/notifications/*"],
-      "@/analytics/*": ["src/analytics/*"],
-      "@/prayer/*": ["src/prayer/*"],
-      "@/marketplace/*": ["src/marketplace/*"],
-      "@/database/*": ["src/database/*"],
-      "@/types/*": ["src/types/*"]
-    }
+    "noFallthroughCasesInSwitch": false
   }
 }

@@ -254,12 +254,16 @@ export class AuthService {
       );
 
       if (adminEmails.length) {
-        await this.mail.send(
+        console.log(`📧 Envoi d'email aux admins pour nouvelle inscription: ${adminEmails.join(', ')}`);
+        const emailResult = await this.mail.send(
           adminEmails,
           "Nouvelle inscription en attente",
           `${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.`,
           `<p><strong>Nouvelle inscription</strong></p><p>${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.</p>`
         );
+        console.log('📧 Résultat envoi email inscription:', emailResult);
+      } else {
+        console.log('⚠️ Aucun admin trouvé pour notifier de la nouvelle inscription');
       }
 
       // ✅ RETOUR SANS TOKEN
@@ -493,8 +497,12 @@ export class AuthService {
 
     this.mail
       .send(user.email, subject, text, html)
-      .then(() => {})
-      .catch(() => {});
+      .then((result) => {
+        console.log(`✅ Email de réinitialisation envoyé à ${user.email}`, result);
+      })
+      .catch((error) => {
+        console.error(`❌ Erreur lors de l'envoi de l'email de réinitialisation à ${user.email}:`, error);
+      });
 
     return {
       message: "Si cet email existe, un lien de réinitialisation a été envoyé",
