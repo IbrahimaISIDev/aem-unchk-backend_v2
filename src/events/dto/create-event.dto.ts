@@ -81,6 +81,11 @@ export class CreateEventDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   tags?: string[];
+
+  @ApiPropertyOptional({ description: 'Indique si une inscription est requise' })
+  @IsOptional()
+  @IsBoolean()
+  requiresRegistration?: boolean;
 }
 
 export class UpdateEventDto {
@@ -163,4 +168,9 @@ export class UpdateEventDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   tags?: string[];
+
+  @ApiPropertyOptional({ description: 'Indique si une inscription est requise' })
+  @IsOptional()
+  @IsBoolean()
+  requiresRegistration?: boolean;
 }
