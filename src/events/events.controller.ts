@@ -13,7 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CreateEventDto, UpdateEventDto } from './dto/create-event.dto';
-import { PaginationDto, PaginationResponseDto } from '../common/dto/pagination.dto';
+import { PaginationResponseDto } from '../common/dto/pagination.dto';
 import { Event, EventType } from './entities/event.entity';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,17 +32,21 @@ export class EventsController {
   @Public()
   @ApiOperation({ summary: 'Lister les événements' })
   @ApiPaginatedResponse(Event)
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'status', required: false, enum: ['upcoming', 'ongoing', 'completed'] })
   @ApiQuery({ name: 'type', required: false, enum: EventType })
   @ApiQuery({ name: 'search', required: false, type: String })
   async findAll(
-    @Query() pagination: PaginationDto,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
     @Query('status') status?: 'upcoming' | 'ongoing' | 'completed',
     @Query('type') type?: EventType,
     @Query('search') search?: string,
   ): Promise<PaginationResponseDto<Event>> {
-    const { page = 1, limit = 20 } = pagination;
-    const res = await this.eventsService.findAll(page, limit, { status, type, search });
+    const pageNum = page || 1;
+    const limitNum = limit || 20;
+    const res = await this.eventsService.findAll(pageNum, limitNum, { status, type, search });
     return new PaginationResponseDto(res.data, res.total, res.page, res.limit);
   }
 
