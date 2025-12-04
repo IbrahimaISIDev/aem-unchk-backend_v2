@@ -149,11 +149,28 @@ export class Registration {
     return this.status === RegistrationStatus.PRESENT;
   }
 
+  // Alias pour compatibilité frontend
+  get checkedIn(): boolean {
+    return this.isPresent;
+  }
+
   get isCancelled(): boolean {
     return this.status === RegistrationStatus.CANCELLED;
   }
 
   get isConfirmed(): boolean {
     return this.status === RegistrationStatus.CONFIRMED;
+  }
+
+  // Méthode pour sérialiser les getters dans les réponses JSON
+  toJSON() {
+    return {
+      ...this,
+      checkedIn: this.isPresent,
+      isPresent: this.isPresent,
+      isCancelled: this.isCancelled,
+      isConfirmed: this.isConfirmed,
+      fullName: this.fullName,
+    };
   }
 }

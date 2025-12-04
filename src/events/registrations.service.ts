@@ -116,7 +116,7 @@ export class RegistrationsService {
     page = 1,
     limit = 50,
     filters?: { status?: RegistrationStatus; search?: string },
-  ) {
+  ): Promise<any> {
     const skip = (page - 1) * limit;
 
     let qb = this.registrationRepo
@@ -143,7 +143,7 @@ export class RegistrationsService {
       .getManyAndCount();
 
     return {
-      data,
+      data: data.map(reg => this.transformRegistration(reg)),
       total,
       page,
       limit,
@@ -152,9 +152,23 @@ export class RegistrationsService {
   }
 
   /**
+   * Transformer une registration en objet avec les getters calculés
+   */
+  private transformRegistration(registration: Registration) {
+    return {
+      ...registration,
+      checkedIn: registration.isPresent,
+      isPresent: registration.isPresent,
+      isCancelled: registration.isCancelled,
+      isConfirmed: registration.isConfirmed,
+      fullName: registration.fullName,
+    };
+  }
+
+  /**
    * Récupérer les inscriptions d'un utilisateur
    */
-  async findByUser(userId: string, page = 1, limit = 20) {
+  async findByUser(userId: string, page = 1, limit = 20): Promise<any> {
     const skip = (page - 1) * limit;
 
     const [data, total] = await this.registrationRepo.findAndCount({
@@ -166,7 +180,7 @@ export class RegistrationsService {
     });
 
     return {
-      data,
+      data: data.map(reg => this.transformRegistration(reg)),
       total,
       page,
       limit,
@@ -192,7 +206,8 @@ export class RegistrationsService {
     registration.checkedInAt = new Date();
     registration.checkedInBy = checkedInBy.id;
 
-    return this.registrationRepo.save(registration);
+    const saved = await this.registrationRepo.save(registration);
+    return this.transformRegistration(saved) as any;
   }
 
   /**
