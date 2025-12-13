@@ -8,6 +8,7 @@ import { GenerateContributionsDto } from "./dto/generate-contributions.dto";
 import { MarkPaidDto } from "./dto/mark-paid.dto";
 import { UsersService } from "../users/users.service";
 import { MailService } from "../email/email.service";
+import { EmailTemplatesService } from "../email/email-templates.service";
 import { Cron } from "@nestjs/schedule";
 
 @Injectable()
@@ -16,7 +17,8 @@ export class ContributionsService {
     @InjectRepository(MemberContribution)
     private readonly repo: Repository<MemberContribution>,
     private readonly usersService: UsersService,
-    private readonly mailService: MailService
+    private readonly mailService: MailService,
+    private readonly emailTemplates: EmailTemplatesService
   ) {}
 
   async getContributions(filterDto: ContributionFilterDto) {
@@ -98,18 +100,34 @@ export class ContributionsService {
       relations: ["member"],
     });
 
-    let sentCount = 0;
-    for (const contribution of contributions) {
-      if (contribution.member?.email) {
-        const result = await this.mailService.send(
-          contribution.member.email,
-          "Rappel de contribution",
-          `Bonjour ${contribution.member.nom}, votre contribution de ${contribution.amount}€ est due le ${contribution.dueDate.toLocaleDateString("fr-FR")}.`,
-          `<p>Bonjour ${contribution.member.nom},</p><p>Votre contribution de <strong>${contribution.amount}€</strong> est due le <strong>${contribution.dueDate.toLocaleDateString("fr-FR")}</strong>.</p><p>Veuillez effectuer le paiement dans les plus brefs délais.</p>`
+    // Envoi des emails en arrière-plan (non-bloquant)
+    const emailPromises = contributions
+      .filter(c => c.member?.email)
+      .map(contribution => {
+        const fullName = `${contribution.member.nom} ${contribution.member.prenom}`;
+        const template = this.emailTemplates.getContributionReminderEmail(
+          fullName,
+          contribution.amount,
+          contribution.dueDate.toLocaleDateString("fr-FR")
         );
-        if (result.sent) sentCount++;
-      }
-    }
+
+        return this.mailService.send(
+          contribution.member.email,
+          template.subject,
+          template.text,
+          template.html
+        ).then((result) => {
+          console.log(`✅ Rappel de contribution envoyé à ${contribution.member.email}:`, result);
+          return result.sent ? 1 : 0;
+        }).catch((e) => {
+          console.error(`❌ Erreur lors de l'envoi du rappel à ${contribution.member.email}:`, e);
+          return 0;
+        });
+      });
+
+    // Attendre tous les envois en parallèle
+    const results = await Promise.all(emailPromises);
+    const sentCount = results.reduce((sum, val) => sum + val, 0);
 
     return {
       success: true,

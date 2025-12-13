@@ -20,6 +20,7 @@ import { UpdateProfileDto } from "../users/dto/update-profile.dto";
 import { JwtPayload } from "./strategies/jwt.strategy";
 import { NotificationsService } from "../notifications/notifications.service";
 import { MailService } from "../email/email.service";
+import { EmailTemplatesService } from "../email/email-templates.service";
 import {
   NotificationPriority,
   NotificationType,
@@ -63,7 +64,8 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private notifications: NotificationsService,
-    private mail: MailService
+    private mail: MailService,
+    private emailTemplates: EmailTemplatesService
   ) {}
 
   // 🔎 Validation utilisateur avec logs détaillés
@@ -241,6 +243,7 @@ export class AuthService {
       });
       const adminEmails = admins.map((a) => a.email).filter(Boolean);
 
+      // Créer les notifications immédiates
       await Promise.all(
         admins.map((a) =>
           this.notifications.create({
@@ -253,17 +256,18 @@ export class AuthService {
         )
       );
 
+      // Envoi d'email en arrière-plan (non-bloquant)
       if (adminEmails.length) {
-        console.log(`📧 Envoi d'email aux admins pour nouvelle inscription: ${adminEmails.join(', ')}`);
-        const emailResult = await this.mail.send(
-          adminEmails,
-          "Nouvelle inscription en attente",
-          `${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.`,
-          `<p><strong>Nouvelle inscription</strong></p><p>${savedUser.nom} ${savedUser.prenom} vient de s'inscrire et attend validation.</p>`
+        const template = this.emailTemplates.getAdminNewRegistrationEmail(
+          `${savedUser.nom} ${savedUser.prenom}`,
+          savedUser.email
         );
-        console.log('📧 Résultat envoi email inscription:', emailResult);
-      } else {
-        console.log('⚠️ Aucun admin trouvé pour notifier de la nouvelle inscription');
+        this.mail.send(adminEmails, template.subject, template.text, template.html)
+          .then((emailResult) => {
+            console.log('✅ Email de nouvelle inscription envoyé aux admins:', emailResult);
+          }).catch((e) => {
+            console.error('❌ Erreur lors de l\'envoi de l\'email de nouvelle inscription:', e);
+          });
       }
 
       // ✅ RETOUR SANS TOKEN
@@ -491,12 +495,15 @@ export class AuthService {
     const frontendUrl = this.configService.get<string>("frontend.url");
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-    const subject = "Réinitialisation de votre mot de passe";
-    const text = `Vous avez demandé la réinitialisation de votre mot de passe. Ce lien expire dans ${ttlMinutes} minutes: ${resetUrl}`;
-    const html = `<p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Ce lien expire dans <strong>${ttlMinutes} minutes</strong>.</p><p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>`;
+    const fullName = user.nom && user.prenom ? `${user.nom} ${user.prenom}` : (user.nom || user.email);
+    const template = this.emailTemplates.getPasswordResetEmail(
+      fullName,
+      resetUrl,
+      ttlMinutes
+    );
 
     this.mail
-      .send(user.email, subject, text, html)
+      .send(user.email, template.subject, template.text, template.html)
       .then((result) => {
         console.log(`✅ Email de réinitialisation envoyé à ${user.email}`, result);
       })

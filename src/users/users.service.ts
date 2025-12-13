@@ -13,6 +13,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AddPointsDto, UserPointsResponseDto } from './dto/user-points.dto';
 import { PaginationDto, PaginationResponseDto } from '../common/dto/pagination.dto';
 import { MailService } from '../email/email.service';
+import { EmailTemplatesService } from '../email/email-templates.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConfigService } from '@nestjs/config';
 import { NotificationType, NotificationPriority } from '../notifications/entities/notification.entity';
@@ -25,6 +26,7 @@ export class UsersService {
     @InjectRepository(Activity)
     private activitiesRepository: Repository<Activity>,
     private readonly mail: MailService,
+    private readonly emailTemplates: EmailTemplatesService,
     private readonly notifications: NotificationsService,
     private readonly config: ConfigService,
   ) {}
@@ -194,26 +196,24 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     const saved = await this.usersRepository.save(user);
 
     // Notification par email et in-app sur changement de rôle
-    try {
-      const appUrl = this.config.get<string>('frontend.url');
-      console.log(`📧 Envoi d'email de changement de rôle à ${user.email}`);
-      const emailResult = await this.mail.send(
-        user.email,
-        'Mise à jour de votre rôle',
-        `Bonjour ${user.nom}, votre rôle a été changé: ${prevRole} → ${role}.`,
-        `<p>Bonjour ${user.nom},</p><p>Votre rôle a été modifié&nbsp;: <strong>${prevRole}</strong> → <strong>${role}</strong>.</p>${appUrl ? `<p><a href="${appUrl}">Accéder à la plateforme</a></p>` : ''}`,
-      );
-      console.log('📧 Résultat envoi email changement de rôle:', emailResult);
-      await this.notifications.create({
-        userId: user.id,
-        title: 'Rôle mis à jour',
-        message: `Votre rôle a été modifié: ${prevRole} → ${role}`,
-        type: NotificationType.INFO,
-        priority: NotificationPriority.NORMAL,
+    // Envoi de notification immédiat
+    await this.notifications.create({
+      userId: user.id,
+      title: 'Rôle mis à jour',
+      message: `Votre rôle a été modifié: ${prevRole} → ${role}`,
+      type: NotificationType.INFO,
+      priority: NotificationPriority.NORMAL,
+    });
+
+    // Envoi d'email en arrière-plan (non-bloquant)
+    const fullName = `${user.nom} ${user.prenom}`;
+    const template = this.emailTemplates.getRoleChangedEmail(fullName, prevRole, role);
+    this.mail.send(user.email, template.subject, template.text, template.html)
+      .then((emailResult) => {
+        console.log('✅ Email de changement de rôle envoyé:', emailResult);
+      }).catch((e) => {
+        console.error('❌ Erreur lors de l\'envoi de l\'email de changement de rôle:', e);
       });
-    } catch (e) {
-      console.error('❌ Erreur lors de l\'envoi de l\'email de changement de rôle:', e);
-    }
 
     return saved;
   }
@@ -231,50 +231,45 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     user.status = status;
     const saved = await this.usersRepository.save(user);
 
-    // Si activation, envoyer email à l'utilisateur + notif
+    // Si activation, envoyer email à l'utilisateur + notif (en arrière-plan)
     if (prevStatus !== UserStatus.ACTIVE && status === UserStatus.ACTIVE) {
-      try {
-        const appUrl = this.config.get<string>('frontend.url');
-        console.log(`📧 Envoi d'email d'activation de compte à ${user.email}`);
-        const emailResult = await this.mail.send(
-          user.email,
-          'Votre compte a été activé',
-          `Bonjour ${user.nom}, votre compte a été activé. Vous pouvez vous connecter: ${appUrl}`,
-          `<p>Bonjour ${user.nom},</p><p>Votre compte a été activé.</p><p><a href="${appUrl}">Se connecter</a></p>`,
-        );
-        console.log('📧 Résultat envoi email activation:', emailResult);
-        await this.notifications.create({
-          userId: user.id,
-          title: 'Compte activé',
-          message: 'Votre compte a été activé. Vous pouvez maintenant vous connecter.',
-          type: NotificationType.SUCCESS,
-          priority: NotificationPriority.NORMAL,
+      // Envoi de notification immédiat
+      await this.notifications.create({
+        userId: user.id,
+        title: 'Compte activé',
+        message: 'Votre compte a été activé. Vous pouvez maintenant vous connecter.',
+        type: NotificationType.SUCCESS,
+        priority: NotificationPriority.NORMAL,
+      });
+
+      // Envoi d'email en arrière-plan (non-bloquant)
+      const fullName = `${user.nom} ${user.prenom}`;
+      const template = this.emailTemplates.getAccountActivatedEmail(fullName);
+      this.mail.send(user.email, template.subject, template.text, template.html)
+        .then((emailResult) => {
+          console.log('✅ Email d\'activation envoyé:', emailResult);
+        }).catch((e) => {
+          console.error('❌ Erreur lors de l\'envoi de l\'email d\'activation:', e);
         });
-      } catch (e) {
-        console.error('❌ Erreur lors de l\'envoi de l\'email d\'activation:', e);
-      }
     } else if (prevStatus !== status) {
-      // Autres changements de statut: informer l'utilisateur
-      try {
-        const appUrl = this.config.get<string>('frontend.url');
-        console.log(`📧 Envoi d'email de changement de statut à ${user.email}`);
-        const emailResult = await this.mail.send(
-          user.email,
-          'Mise à jour du statut de votre compte',
-          `Bonjour ${user.nom}, le statut de votre compte a été mis à jour: ${prevStatus} → ${status}.`,
-          `<p>Bonjour ${user.nom},</p><p>Le statut de votre compte a été mis à jour&nbsp;: <strong>${prevStatus}</strong> → <strong>${status}</strong>.</p>${appUrl ? `<p><a href="${appUrl}">Accéder à la plateforme</a></p>` : ''}`,
-        );
-        console.log('📧 Résultat envoi email changement de statut:', emailResult);
-        await this.notifications.create({
-          userId: user.id,
-          title: 'Statut mis à jour',
-          message: `Votre statut a été modifié: ${prevStatus} → ${status}`,
-          type: NotificationType.INFO,
-          priority: NotificationPriority.NORMAL,
+      // Envoi de notification immédiat
+      await this.notifications.create({
+        userId: user.id,
+        title: 'Statut mis à jour',
+        message: `Votre statut a été modifié: ${prevStatus} → ${status}`,
+        type: NotificationType.INFO,
+        priority: NotificationPriority.NORMAL,
+      });
+
+      // Envoi d'email en arrière-plan (non-bloquant)
+      const fullName = `${user.nom} ${user.prenom}`;
+      const template = this.emailTemplates.getStatusChangedEmail(fullName, prevStatus, status);
+      this.mail.send(user.email, template.subject, template.text, template.html)
+        .then((emailResult) => {
+          console.log('✅ Email de changement de statut envoyé:', emailResult);
+        }).catch((e) => {
+          console.error('❌ Erreur lors de l\'envoi de l\'email de changement de statut:', e);
         });
-      } catch (e) {
-        console.error('❌ Erreur lors de l\'envoi de l\'email de changement de statut:', e);
-      }
     }
 
     return saved;
