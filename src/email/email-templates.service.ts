@@ -10,8 +10,13 @@ export interface EmailTemplate {
 @Injectable()
 export class EmailTemplatesService {
   private readonly appName = 'AEM UNCHK';
-  private readonly primaryColor = '#667eea';
+  private readonly primaryColor = '#059669'; // Vert professionnel (emerald-600)
+  private readonly secondaryColor = '#10b981'; // Vert secondaire (emerald-500)
+  private readonly logoUrl = 'https://aem-unchk-connect.vercel.app/logo.png'; // URL du logo
   private readonly frontendUrl: string;
+  private readonly contactEmail = 'aem.unchk7@gmail.com';
+  private readonly contactPhone1 = '+221 XX XXX XX XX'; // À remplacer par le vrai numéro
+  private readonly contactPhone2 = '+221 XX XXX XX XX'; // À remplacer par le vrai numéro
 
   constructor(private readonly config: ConfigService) {
     this.frontendUrl = this.config.get<string>('frontend.url') || 'https://aem-unchk-connect.vercel.app';
@@ -32,19 +37,38 @@ export class EmailTemplatesService {
     .preheader { display: none !important; visibility: hidden; mso-hide: all; font-size: 1px; line-height: 1px; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; }
   </style>` : ''}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;">
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4;">
   ${preheader ? `<span class="preheader">${preheader}</span>` : ''}
 
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7fa; padding: 20px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f0fdf4; padding: 20px 0;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);">
 
-          <!-- Header -->
+          <!-- Header avec Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, ${this.primaryColor} 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">${this.appName}</h1>
-              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Association des Étudiants Musulmans - UNCHK</p>
+            <td style="background: linear-gradient(135deg, ${this.primaryColor} 0%, ${this.secondaryColor} 100%); padding: 30px; text-align: center;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0" style="display: inline-block; vertical-align: middle;">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 15px;">
+                          <img src="${this.logoUrl}" alt="${this.appName}" style="height: 60px; width: auto; display: block; border-radius: 8px;" />
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; text-align: left; line-height: 1.2;">
+                            ${this.appName}
+                          </h1>
+                          <p style="margin: 5px 0 0; color: rgba(255,255,255,0.95); font-size: 13px; text-align: left; font-weight: 500;">
+                            Association des Étudiants Musulmans
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -55,22 +79,64 @@ export class EmailTemplatesService {
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer avec informations de contact -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
-              <p style="margin: 0 0 10px; color: #6c757d; font-size: 14px;">
-                <strong>${this.appName}</strong><br>
-                Université Numérique Cheikh Hamidou Kane
-              </p>
-              <p style="margin: 10px 0; color: #6c757d; font-size: 12px;">
-                Cet email a été envoyé depuis notre plateforme de gestion associative.
-              </p>
-              <p style="margin: 10px 0;">
-                <a href="${this.frontendUrl}" style="color: ${this.primaryColor}; text-decoration: none; font-size: 14px; font-weight: 500;">Accéder à la plateforme</a>
-              </p>
-              <p style="margin: 15px 0 0; color: #adb5bd; font-size: 11px;">
-                © ${new Date().getFullYear()} ${this.appName}. Tous droits réservés.
-              </p>
+            <td style="background-color: #f8fafb; padding: 30px; border-top: 3px solid ${this.primaryColor};">
+              <!-- Informations de contact -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0 0 15px; color: #1f2937; font-size: 15px; font-weight: 600;">
+                      📞 Contactez-nous
+                    </p>
+                    <table cellpadding="0" cellspacing="0" border="0" style="display: inline-block;">
+                      <tr>
+                        <td style="padding: 5px 0;">
+                          <span style="color: ${this.primaryColor}; font-size: 14px; font-weight: 600;">📧</span>
+                          <a href="mailto:${this.contactEmail}" style="color: #4b5563; text-decoration: none; font-size: 14px; margin-left: 8px;">
+                            ${this.contactEmail}
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0;">
+                          <span style="color: ${this.primaryColor}; font-size: 14px; font-weight: 600;">📱</span>
+                          <span style="color: #4b5563; font-size: 14px; margin-left: 8px;">
+                            ${this.contactPhone1}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0;">
+                          <span style="color: ${this.primaryColor}; font-size: 14px; font-weight: 600;">📱</span>
+                          <span style="color: #4b5563; font-size: 14px; margin-left: 8px;">
+                            ${this.contactPhone2}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Informations de l'association -->
+              <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <p style="margin: 0 0 10px; color: #374151; font-size: 14px; font-weight: 600;">
+                  ${this.appName}
+                </p>
+                <p style="margin: 0 0 15px; color: #6b7280; font-size: 13px; line-height: 1.5;">
+                  Université Numérique Cheikh Hamidou Kane (UNCHK)<br>
+                  Sénégal
+                </p>
+                <p style="margin: 15px 0;">
+                  <a href="${this.frontendUrl}" style="display: inline-block; background-color: ${this.primaryColor}; color: #ffffff; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                    Accéder à la plateforme
+                  </a>
+                </p>
+                <p style="margin: 15px 0 0; color: #9ca3af; font-size: 12px;">
+                  © ${new Date().getFullYear()} ${this.appName}. Tous droits réservés.
+                </p>
+              </div>
             </td>
           </tr>
 
