@@ -72,7 +72,16 @@ export class RegistrationsService {
         : RegistrationStatus.CONFIRMED,
     });
 
-    const saved = await this.registrationRepo.save(registration);
+    let saved: Registration;
+    try {
+      saved = await this.registrationRepo.save(registration);
+    } catch (error) {
+      // Gérer l'erreur de contrainte unique (doublon d'email)
+      if (error.code === '23505') {
+        throw new ConflictException('Vous êtes déjà inscrit à cet événement');
+      }
+      throw error;
+    }
 
     // Mettre à jour le compteur de participants
     if (!shouldWaitlist) {
