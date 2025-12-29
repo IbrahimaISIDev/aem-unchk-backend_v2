@@ -43,15 +43,6 @@ export class RegistrationsService {
     // Vérifications
     this.validateEventRegistration(event);
 
-    // Vérifier les doublons (même email pour cet événement)
-    const existing = await this.registrationRepo.findOne({
-      where: { eventId, email: dto.email },
-    });
-
-    if (existing) {
-      throw new ConflictException('Vous êtes déjà inscrit à cet événement');
-    }
-
     // Vérifier la disponibilité
     const availableSpots = event.availableSpots;
     const shouldWaitlist =
