@@ -291,9 +291,10 @@ export class RegistrationsService {
    * Valider qu'un événement accepte les inscriptions
    */
   private validateEventRegistration(event: Event): void {
-    if (!event.requiresRegistration) {
-      throw new BadRequestException('Cet événement ne nécessite pas d\'inscription');
-    }
+    // Permettre l'inscription dans tous les cas (requiresRegistration n'est plus bloquant)
+    // if (!event.requiresRegistration) {
+    //   throw new BadRequestException('Cet événement ne nécessite pas d\'inscription');
+    // }
 
     if (event.status === EventStatus.CANCELLED) {
       throw new BadRequestException('Cet événement a été annulé');
