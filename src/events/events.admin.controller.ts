@@ -9,6 +9,10 @@ import { PaginationDto, PaginationResponseDto } from '../common/dto/pagination.d
 import { Response } from 'express';
 import { toCSV, toXLSX } from '../common/utils/export.util';
 import { AuditService } from '../audit/audit.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Registration } from './entities/registration.entity';
+import { Event } from './entities/event.entity';
 
 @ApiTags('Admin Events')
 @Controller('admin/events')
@@ -16,7 +20,14 @@ import { AuditService } from '../audit/audit.service';
 @Roles(UserRole.ADMIN)
 @ApiBearerAuth('JWT-auth')
 export class EventsAdminController {
-  constructor(private readonly events: EventsService, private readonly audit: AuditService) {}
+  constructor(
+    private readonly events: EventsService,
+    private readonly audit: AuditService,
+    @InjectRepository(Registration)
+    private readonly registrationRepo: Repository<Registration>,
+    @InjectRepository(Event)
+    private readonly eventRepo: Repository<Event>,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Admin index route for events' })
@@ -67,5 +78,106 @@ export class EventsAdminController {
       await this.audit.log({ action: 'export', entityType: 'Event', status: 'success', context: { format, filters: query } });
       return res.send(buf);
     }
+  }
+
+  /**
+   * MAINTENANCE: Supprimer les doublons et créer l'index unique
+   * Endpoint temporaire pour corriger la base de données
+   */
+  @Post('maintenance/fix-duplicates')
+  @ApiOperation({ summary: 'Fix duplicate registrations and create unique index' })
+  async fixDuplicates() {
+    try {
+      // 1. Supprimer les doublons en gardant le premier
+      const deleteDuplicates = `
+        DELETE FROM event_registrations
+        WHERE id NOT IN (
+          SELECT MIN(id)
+          FROM event_registrations
+          GROUP BY "eventId", email
+        )
+      `;
+
+      const deleteResult = await this.registrationRepo.query(deleteDuplicates);
+
+      // 2. Créer l'index unique
+      const createIndex = `
+        CREATE UNIQUE INDEX IF NOT EXISTS "IDX_event_email_unique"
+        ON "event_registrations" ("eventId", "email")
+      `;
+
+      await this.registrationRepo.query(createIndex);
+
+      await this.audit.log({
+        action: 'fix_duplicates',
+        entityType: 'Registration',
+        status: 'success',
+        context: { duplicatesDeleted: deleteResult },
+      });
+
+      return {
+        success: true,
+        message: 'Doublons supprimés et index créé',
+        duplicatesDeleted: deleteResult,
+      };
+    } catch (error) {
+      await this.audit.log({
+        action: 'fix_duplicates',
+        entityType: 'Registration',
+        status: 'fail',
+        context: { error: error.message },
+      });
+
+      return {
+        success: false,
+        message: error.message,
+        code: error.code,
+      };
+    }
+  }
+
+  /**
+   * MAINTENANCE: Nettoyer les inscriptions pour un événement
+   */
+  @Delete(':eventId/maintenance/cleanup-registrations')
+  @ApiOperation({ summary: 'Delete all registrations for an event (for testing)' })
+  async cleanupEventRegistrations(@Param('eventId', ParseUUIDPipe) eventId: string) {
+    const result = await this.registrationRepo.delete({ eventId });
+    await this.eventRepo.update({ id: eventId }, { currentParticipants: 0 });
+
+    await this.audit.log({
+      action: 'cleanup_registrations',
+      entityType: 'Registration',
+      entityId: eventId,
+      status: 'success',
+      context: { deleted: result.affected },
+    });
+
+    return {
+      success: true,
+      message: `${result.affected} inscriptions supprimées`,
+      eventId,
+    };
+  }
+
+  /**
+   * MAINTENANCE: Vérifier les index
+   */
+  @Get('maintenance/check-indexes')
+  @ApiOperation({ summary: 'Check database indexes for registrations table' })
+  async checkIndexes() {
+    const query = `
+      SELECT indexname, indexdef
+      FROM pg_indexes
+      WHERE tablename = 'event_registrations'
+        AND indexdef LIKE '%UNIQUE%'
+    `;
+
+    const indexes = await this.registrationRepo.query(query);
+
+    return {
+      success: true,
+      indexes,
+    };
   }
 }
