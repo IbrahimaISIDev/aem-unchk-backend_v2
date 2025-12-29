@@ -258,17 +258,28 @@ export class AuthService {
 
       // Envoi d'email en arrière-plan (non-bloquant)
       if (adminEmails.length) {
-        const template = this.emailTemplates.getAdminNewRegistrationEmail(
+        const adminTemplate = this.emailTemplates.getAdminNewRegistrationEmail(
           `${savedUser.nom} ${savedUser.prenom}`,
           savedUser.email
         );
-        this.mail.send(adminEmails, template.subject, template.text, template.html)
+        this.mail.send(adminEmails, adminTemplate.subject, adminTemplate.text, adminTemplate.html)
           .then((emailResult) => {
             console.log('✅ Email de nouvelle inscription envoyé aux admins:', emailResult);
           }).catch((e) => {
-            console.error('❌ Erreur lors de l\'envoi de l\'email de nouvelle inscription:', e);
+            console.error('❌ Erreur lors de l\'envoi de l\'email de nouvelle inscription aux admins:', e);
           });
       }
+
+      // Envoi d'email de bienvenue à l'utilisateur (non-bloquant)
+      const fullName = `${savedUser.nom} ${savedUser.prenom}`;
+      const welcomeTemplate = this.emailTemplates.getNewRegistrationEmail(fullName);
+
+      this.mail.send(savedUser.email, welcomeTemplate.subject, welcomeTemplate.text, welcomeTemplate.html)
+        .then((emailResult) => {
+          console.log('✅ Email de bienvenue envoyé à l\'utilisateur:', emailResult);
+        }).catch((e) => {
+          console.error('❌ Erreur lors de l\'envoi de l\'email de bienvenue:', e);
+        });
 
       // ✅ RETOUR SANS TOKEN
       return {
@@ -617,6 +628,84 @@ export class AuthService {
         success: false,
         message: `Échec de l'envoi de l'email de test`,
         details: { error: result.error },
+      };
+    }
+  }
+
+  // 📧 Test de tous les templates d'email
+  async testAllEmailTemplates(to: string): Promise<{
+    success: boolean;
+    message: string;
+    results: {
+      welcomeEmail: any;
+      activationEmail: any;
+      statusChangeEmail: any;
+      roleChangeEmail: any;
+      passwordResetEmail: any;
+    };
+  }> {
+    console.log(`🧪 [testAllEmailTemplates] Starting comprehensive email template test for: ${to}`);
+
+    const results = {
+      welcomeEmail: null,
+      activationEmail: null,
+      statusChangeEmail: null,
+      roleChangeEmail: null,
+      passwordResetEmail: null,
+    };
+
+    try {
+      // Test 1: Email de bienvenue (inscription)
+      console.log('📧 Test 1/5: Email de bienvenue...');
+      const welcomeTemplate = this.emailTemplates.getNewRegistrationEmail('Test User');
+      results.welcomeEmail = await this.mail.send(to, welcomeTemplate.subject, welcomeTemplate.text, welcomeTemplate.html);
+
+      // Attendre un peu entre chaque email pour éviter le rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Test 2: Email d'activation de compte
+      console.log('📧 Test 2/5: Email d\'activation de compte...');
+      const activationTemplate = this.emailTemplates.getAccountActivatedEmail('Test User');
+      results.activationEmail = await this.mail.send(to, activationTemplate.subject, activationTemplate.text, activationTemplate.html);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Test 3: Email de changement de statut
+      console.log('📧 Test 3/5: Email de changement de statut...');
+      const statusTemplate = this.emailTemplates.getStatusChangedEmail('Test User', 'PENDING' as any, 'SUSPENDED' as any);
+      results.statusChangeEmail = await this.mail.send(to, statusTemplate.subject, statusTemplate.text, statusTemplate.html);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Test 4: Email de changement de rôle
+      console.log('📧 Test 4/5: Email de changement de rôle...');
+      const roleTemplate = this.emailTemplates.getRoleChangedEmail('Test User', 'MEMBER' as any, 'ADMIN' as any);
+      results.roleChangeEmail = await this.mail.send(to, roleTemplate.subject, roleTemplate.text, roleTemplate.html);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Test 5: Email de réinitialisation de mot de passe
+      console.log('📧 Test 5/5: Email de réinitialisation de mot de passe...');
+      const resetTemplate = this.emailTemplates.getPasswordResetEmail('Test User', 'https://aem-unchk-connect.vercel.app/reset-password?token=test-token-123456', 15);
+      results.passwordResetEmail = await this.mail.send(to, resetTemplate.subject, resetTemplate.text, resetTemplate.html);
+
+      // Compter les succès
+      const successCount = Object.values(results).filter((r: any) => r?.sent === true).length;
+      const totalTests = 5;
+
+      console.log(`✅ [testAllEmailTemplates] Tests terminés: ${successCount}/${totalTests} réussis`);
+
+      return {
+        success: successCount === totalTests,
+        message: `${successCount}/${totalTests} emails de test envoyés avec succès à ${to}`,
+        results,
+      };
+    } catch (error) {
+      console.error('❌ [testAllEmailTemplates] Erreur lors des tests:', error);
+      return {
+        success: false,
+        message: `Erreur lors de l'envoi des emails de test: ${error.message}`,
+        results,
       };
     }
   }

@@ -57,37 +57,75 @@ export class MailService {
       });
   }
 
+  /**
+   * Envoie un email avec retry automatique en cas d'échec
+   * @param to Destinataire(s)
+   * @param subject Sujet de l'email
+   * @param text Contenu texte brut
+   * @param html Contenu HTML
+   * @param maxRetries Nombre maximum de tentatives (par défaut: 3)
+   * @param retryDelay Délai entre les tentatives en ms (par défaut: 2000ms)
+   */
   async send(
     to: string | string[],
     subject: string,
     text?: string,
-    html?: string
+    html?: string,
+    maxRetries: number = 3,
+    retryDelay: number = 2000
   ) {
     const recipients = Array.isArray(to) ? to.join(",") : to;
+    let lastError: any;
 
-    try {
-      this.logger.log(
-        `📧 [SMTP] Sending email to: ${recipients} | subject: "${subject}"`
-      );
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        this.logger.log(
+          `📧 [SMTP] Attempt ${attempt}/${maxRetries} - Sending email to: ${recipients} | subject: "${subject}"`
+        );
 
-      const info = await this.transporter.sendMail({
-        from: this.from,
-        to: recipients,
-        subject,
-        text: text || undefined,
-        html: html || undefined,
-      });
+        const info = await this.transporter.sendMail({
+          from: this.from,
+          to: recipients,
+          subject,
+          text: text || undefined,
+          html: html || undefined,
+        });
 
-      this.logger.log(
-        `✅ [SMTP] Email sent successfully: ${info.messageId} | to=${recipients}`
-      );
+        this.logger.log(
+          `✅ [SMTP] Email sent successfully on attempt ${attempt}: ${info.messageId} | to=${recipients}`
+        );
 
-      return { sent: true, id: info.messageId, method: "SMTP" };
-    } catch (e: any) {
-      this.logger.error(
-        `❌ [SMTP] Failed to send email: ${e.message} | code: ${e.code || "N/A"}`
-      );
-      return { sent: false, error: e.message, method: "SMTP" };
+        return {
+          sent: true,
+          id: info.messageId,
+          method: "SMTP",
+          attempts: attempt,
+          recipients: recipients
+        };
+      } catch (e: any) {
+        lastError = e;
+
+        if (attempt < maxRetries) {
+          this.logger.warn(
+            `⚠️ [SMTP] Attempt ${attempt}/${maxRetries} failed: ${e.message} | Retrying in ${retryDelay}ms...`
+          );
+          // Attendre avant de réessayer
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        } else {
+          this.logger.error(
+            `❌ [SMTP] All ${maxRetries} attempts failed for email to ${recipients} | Last error: ${e.message} | code: ${e.code || "N/A"}`
+          );
+        }
+      }
     }
+
+    return {
+      sent: false,
+      error: lastError?.message || "Unknown error",
+      code: lastError?.code,
+      method: "SMTP",
+      attempts: maxRetries,
+      recipients: recipients
+    };
   }
 }

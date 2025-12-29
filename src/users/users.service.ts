@@ -195,6 +195,8 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     user.role = role;
     const saved = await this.usersRepository.save(user);
 
+    console.log(`🔄 [updateRole] Changement de rôle: ${prevRole} → ${role} pour l'utilisateur ${user.email}`);
+
     // Notification par email et in-app sur changement de rôle
     // Envoi de notification immédiat
     await this.notifications.create({
@@ -205,9 +207,14 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
       priority: NotificationPriority.NORMAL,
     });
 
+    console.log(`📧 [updateRole] Préparation de l'envoi d'email à ${user.email}...`);
+
     // Envoi d'email en arrière-plan (non-bloquant)
     const fullName = `${user.nom} ${user.prenom}`;
     const template = this.emailTemplates.getRoleChangedEmail(fullName, prevRole, role);
+
+    console.log(`📧 [updateRole] Template généré, envoi en cours...`);
+
     this.mail.send(user.email, template.subject, template.text, template.html)
       .then((emailResult) => {
         console.log('✅ Email de changement de rôle envoyé:', emailResult);
@@ -231,8 +238,12 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     user.status = status;
     const saved = await this.usersRepository.save(user);
 
+    console.log(`🔄 [updateStatus] Changement de statut: ${prevStatus} → ${status} pour l'utilisateur ${user.email}`);
+
     // Si activation, envoyer email à l'utilisateur + notif (en arrière-plan)
     if (prevStatus !== UserStatus.ACTIVE && status === UserStatus.ACTIVE) {
+      console.log(`✅ [updateStatus] Activation détectée, préparation email d'activation...`);
+
       // Envoi de notification immédiat
       await this.notifications.create({
         userId: user.id,
@@ -245,6 +256,9 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
       // Envoi d'email en arrière-plan (non-bloquant)
       const fullName = `${user.nom} ${user.prenom}`;
       const template = this.emailTemplates.getAccountActivatedEmail(fullName);
+
+      console.log(`📧 [updateStatus] Template d'activation généré pour ${user.email}, envoi en cours...`);
+
       this.mail.send(user.email, template.subject, template.text, template.html)
         .then((emailResult) => {
           console.log('✅ Email d\'activation envoyé:', emailResult);
@@ -252,6 +266,8 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
           console.error('❌ Erreur lors de l\'envoi de l\'email d\'activation:', e);
         });
     } else if (prevStatus !== status) {
+      console.log(`🔄 [updateStatus] Changement de statut détecté (non-activation), préparation email...`);
+
       // Envoi de notification immédiat
       await this.notifications.create({
         userId: user.id,
@@ -264,6 +280,9 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
       // Envoi d'email en arrière-plan (non-bloquant)
       const fullName = `${user.nom} ${user.prenom}`;
       const template = this.emailTemplates.getStatusChangedEmail(fullName, prevStatus, status);
+
+      console.log(`📧 [updateStatus] Template de changement de statut généré pour ${user.email}, envoi en cours...`);
+
       this.mail.send(user.email, template.subject, template.text, template.html)
         .then((emailResult) => {
           console.log('✅ Email de changement de statut envoyé:', emailResult);

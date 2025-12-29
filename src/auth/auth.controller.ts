@@ -455,4 +455,47 @@ export class AuthController {
   async testEmail(@Body() body: { to: string; subject?: string; message?: string }) {
     return this.authService.testEmail(body.to, body.subject, body.message);
   }
+
+  @Post('test-all-email-templates')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Tester tous les templates d\'email',
+    description: 'Envoie un exemple de chaque type d\'email pour vérifier les templates (Admin uniquement)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', example: 'test@example.com', description: 'Email destinataire pour tous les tests' },
+      },
+      required: ['to'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tous les emails de test ont été envoyés',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        results: {
+          type: 'object',
+          properties: {
+            welcomeEmail: { type: 'object' },
+            activationEmail: { type: 'object' },
+            statusChangeEmail: { type: 'object' },
+            roleChangeEmail: { type: 'object' },
+            passwordResetEmail: { type: 'object' },
+          },
+        },
+      },
+    },
+  })
+  async testAllEmailTemplates(@Body() body: { to: string }) {
+    return this.authService.testAllEmailTemplates(body.to);
+  }
 }

@@ -7,6 +7,12 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+backend.log
+
+# Test files temporaires
+test-*.js
+test-*.sh
 
 # IDEs
 .vscode/

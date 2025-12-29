@@ -249,7 +249,7 @@ export class EmailTemplatesService {
       </h2>
 
       <p style="margin: 0 0 15px; color: #495057; font-size: 16px; line-height: 1.6;">
-        Bonjour <strong>Monsieur/Madame ${userName}</strong>,
+        Assalamou anleykoum ! <strong>Monsieur/Madame ${userName}</strong>,
       </p>
 
       <p style="margin: 0 0 20px; color: #495057; font-size: 16px; line-height: 1.6;">
@@ -288,7 +288,7 @@ export class EmailTemplatesService {
 
     return {
       subject: `✅ Votre compte ${this.appName} est activé - Bienvenue !`,
-      text: `Bonjour Monsieur/Madame ${userName},\n\nVotre compte a été activé avec succès !\n\nVous pouvez maintenant vous connecter et accéder à toutes les fonctionnalités de la plateforme.\n\nConnectez-vous: ${this.frontendUrl}/login\n\nBienvenue dans la communauté ${this.appName} !\n\nL'équipe ${this.appName}`,
+      text: `Assalamou anleykoum ! Monsieur/Madame ${userName},\n\nVotre compte a été activé avec succès !\n\nVous pouvez maintenant vous connecter et accéder à toutes les fonctionnalités de la plateforme.\n\nConnectez-vous: ${this.frontendUrl}/login\n\nBienvenue dans la communauté ${this.appName} !\n\nL'équipe ${this.appName}`,
       html: this.getBaseTemplate(content, 'Votre compte est activé ! Connectez-vous dès maintenant'),
     };
   }
@@ -312,7 +312,7 @@ export class EmailTemplatesService {
       </h2>
 
       <p style="margin: 0 0 15px; color: #495057; font-size: 16px; line-height: 1.6;">
-        Bonjour <strong>Monsieur/Madame ${userName}</strong>,
+        Assalamou anleykoum ! <strong>Monsieur/Madame ${userName}</strong>,
       </p>
 
       <p style="margin: 0 0 20px; color: #495057; font-size: 16px; line-height: 1.6;">
@@ -349,7 +349,7 @@ export class EmailTemplatesService {
 
     return {
       subject: `${this.appName} - Mise à jour du statut de votre compte`,
-      text: `Bonjour Monsieur/Madame ${userName},\n\nLe statut de votre compte a été modifié:\n${oldStatus} → ${newStatus}\n\n${newStatus === 'ACTIVE' ? 'Vous pouvez maintenant vous connecter.' : 'Pour plus d\'informations, contactez l\'administration.'}\n\nL'équipe ${this.appName}`,
+      text: `Assalamou anleykoum ! Monsieur/Madame ${userName},\n\nLe statut de votre compte a été modifié:\n${oldStatus} → ${newStatus}\n\n${newStatus === 'ACTIVE' ? 'Vous pouvez maintenant vous connecter.' : 'Pour plus d\'informations, contactez l\'administration.'}\n\nL'équipe ${this.appName}`,
       html: this.getBaseTemplate(content, `Votre statut est maintenant: ${newStatus}`),
     };
   }
@@ -371,7 +371,7 @@ export class EmailTemplatesService {
       </h2>
 
       <p style="margin: 0 0 15px; color: #495057; font-size: 16px; line-height: 1.6;">
-        Bonjour <strong>Monsieur/Madame ${userName}</strong>,
+        Assalamou anleykoum ! <strong>Monsieur/Madame ${userName}</strong>,
       </p>
 
       <p style="margin: 0 0 20px; color: #495057; font-size: 16px; line-height: 1.6;">
@@ -408,7 +408,7 @@ export class EmailTemplatesService {
 
     return {
       subject: `${this.appName} - Mise à jour de votre rôle`,
-      text: `Bonjour Monsieur/Madame ${userName},\n\nVotre rôle a été modifié:\n${oldRole} → ${newRole}\n\nVos nouvelles permissions seront actives dès votre prochaine connexion.\n\nAccédez à la plateforme: ${this.frontendUrl}\n\nL'équipe ${this.appName}`,
+      text: `Assalamou anleykoum ! Monsieur/Madame ${userName},\n\nVotre rôle a été modifié:\n${oldRole} → ${newRole}\n\nVos nouvelles permissions seront actives dès votre prochaine connexion.\n\nAccédez à la plateforme: ${this.frontendUrl}\n\nL'équipe ${this.appName}`,
       html: this.getBaseTemplate(content, `Votre nouveau rôle: ${newRole}`),
     };
   }
@@ -423,7 +423,7 @@ export class EmailTemplatesService {
       </h2>
 
       <p style="margin: 0 0 15px; color: #495057; font-size: 16px; line-height: 1.6;">
-        Bonjour <strong>Monsieur/Madame ${userName}</strong>,
+        Assalamou anleykoum ! <strong>Monsieur/Madame ${userName}</strong>,
       </p>
 
       <p style="margin: 0 0 20px; color: #495057; font-size: 16px; line-height: 1.6;">
@@ -457,7 +457,7 @@ export class EmailTemplatesService {
 
     return {
       subject: `${this.appName} - Réinitialisation de votre mot de passe`,
-      text: `Bonjour Monsieur/Madame ${userName},\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCe lien expire dans ${expiresInMinutes} minutes:\n${resetUrl}\n\nSi vous n'avez pas demandé cette réinitialisation, ignorez cet email.\n\nL'équipe ${this.appName}`,
+      text: `Assalamou anleykoum ! Monsieur/Madame ${userName},\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCe lien expire dans ${expiresInMinutes} minutes:\n${resetUrl}\n\nSi vous n'avez pas demandé cette réinitialisation, ignorez cet email.\n\nL'équipe ${this.appName}`,
       html: this.getBaseTemplate(content, 'Réinitialisez votre mot de passe en toute sécurité'),
     };
   }
@@ -472,7 +472,7 @@ export class EmailTemplatesService {
       </h2>
 
       <p style="margin: 0 0 15px; color: #495057; font-size: 16px; line-height: 1.6;">
-        Bonjour <strong>Monsieur/Madame ${userName}</strong>,
+        Assalamou anleykoum ! <strong>Monsieur/Madame ${userName}</strong>,
       </p>
 
       <p style="margin: 0 0 20px; color: #495057; font-size: 16px; line-height: 1.6;">
@@ -510,7 +510,7 @@ export class EmailTemplatesService {
 
     return {
       subject: `${this.appName} - Rappel de contribution (${amount}€)`,
-      text: `Bonjour Monsieur/Madame ${userName},\n\nVous avez une contribution à régler:\n\nMontant: ${amount}€\nDate limite: ${dueDate}\n\nVeuillez effectuer le paiement dans les plus brefs délais.\n\nConsultez vos contributions: ${this.frontendUrl}/contributions\n\nMerci,\nL'équipe ${this.appName}`,
+      text: `Assalamou anleykoum ! Monsieur/Madame ${userName},\n\nVous avez une contribution à régler:\n\nMontant: ${amount}€\nDate limite: ${dueDate}\n\nVeuillez effectuer le paiement dans les plus brefs délais.\n\nConsultez vos contributions: ${this.frontendUrl}/contributions\n\nMerci,\nL'équipe ${this.appName}`,
       html: this.getBaseTemplate(content, `Contribution de ${amount}€ à régler avant le ${dueDate}`),
     };
   }
