@@ -180,4 +180,45 @@ export class EventsAdminController {
       indexes,
     };
   }
+
+  /**
+   * MAINTENANCE: Supprimer l'index unique problématique sur (eventId, userId)
+   * Cet index empêche les utilisateurs non connectés (userId=NULL) de s'inscrire
+   */
+  @Delete('maintenance/remove-userid-index')
+  @ApiOperation({ summary: 'Remove problematic unique index on (eventId, userId)' })
+  async removeUserIdIndex() {
+    try {
+      // Supprimer l'index unique sur (eventId, userId)
+      const dropIndex = `
+        DROP INDEX IF EXISTS "IDX_b308df020159fd5c476ace931d"
+      `;
+
+      await this.registrationRepo.query(dropIndex);
+
+      await this.audit.log({
+        action: 'remove_userid_index',
+        entityType: 'Registration',
+        status: 'success',
+      });
+
+      return {
+        success: true,
+        message: 'Index unique sur (eventId, userId) supprimé avec succès',
+      };
+    } catch (error) {
+      await this.audit.log({
+        action: 'remove_userid_index',
+        entityType: 'Registration',
+        status: 'fail',
+        context: { error: error.message },
+      });
+
+      return {
+        success: false,
+        message: error.message,
+        code: error.code,
+      };
+    }
+  }
 }
