@@ -21,6 +21,7 @@ export enum RegistrationStatus {
 
 @Entity('event_registrations')
 @Index(['eventId', 'userId'], { unique: true })
+@Index(['eventId', 'email'], { unique: true })
 @Index(['eventId'])
 @Index(['userId'])
 @Index(['status'])
