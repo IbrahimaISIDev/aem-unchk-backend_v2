@@ -27,7 +27,11 @@ export class PaginationDto {
   sort?: string;
 
   get skip(): number {
-    return (this.page - 1) * this.limit;
+    const pageNum = typeof this.page === 'string' ? parseInt(this.page) : this.page;
+    const limitNum = typeof this.limit === 'string' ? parseInt(this.limit) : this.limit;
+    const result = (pageNum - 1) * limitNum;
+    console.log('🔍 SKIP CALCULATION:', { page: this.page, limit: this.limit, pageNum, limitNum, skip: result });
+    return result;
   }
 }
 
