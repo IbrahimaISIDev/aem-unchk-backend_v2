@@ -34,10 +34,13 @@ export class UsersService {
 async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto<User>> {
   const { page, limit, skip } = paginationDto;
 
+  // 🔍 DEBUG LOG
+  console.log('📊 PAGINATION DEBUG:', { page, limit, skip });
+
   const qb = this.usersRepository
     .createQueryBuilder('user')
     .leftJoinAndSelect('user.eno', 'eno')
-    .leftJoinAndSelect('user.pole', 'pole') 
+    .leftJoinAndSelect('user.pole', 'pole')
     .leftJoinAndSelect('user.filiereRef', 'filiere')
     .orderBy('user.createdAt', 'DESC')
     .skip(skip)
@@ -95,6 +98,10 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
   }
 
   const [users, total] = await qb.getManyAndCount();
+
+  // 🔍 DEBUG LOG
+  console.log('✅ RETURNED USERS:', users.map(u => ({ id: u.id, nom: u.nom, prenom: u.prenom })));
+  console.log('📊 TOTAL:', total);
 
   return new PaginationResponseDto(users, total, page, limit);
 }
