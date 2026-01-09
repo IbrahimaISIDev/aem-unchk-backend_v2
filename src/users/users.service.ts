@@ -119,6 +119,16 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     return user;
   }
 
+  async findAllActive(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: {
+        status: UserStatus.ACTIVE,
+        isActive: true,
+      },
+      select: ['id', 'nom', 'prenom', 'email', 'telephone', 'role'],
+    });
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Vérifier si l'email existe déjà
     const existingUser = await this.usersRepository.findOne({
