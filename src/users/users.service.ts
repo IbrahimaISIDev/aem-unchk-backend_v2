@@ -32,10 +32,10 @@ export class UsersService {
   ) {}
 
 async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto<User>> {
-  const { page, limit, skip } = paginationDto;
+  const { page, limit } = paginationDto;
 
   // 🔍 DEBUG LOG
-  console.log('📊 PAGINATION DEBUG:', { page, limit, skip });
+  console.log('📊 PAGINATION DEBUG:', { page, limit, skip: paginationDto.skip });
 
   const qb = this.usersRepository
     .createQueryBuilder('user')
@@ -43,7 +43,7 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
     .leftJoinAndSelect('user.pole', 'pole')
     .leftJoinAndSelect('user.filiereRef', 'filiere')
     .orderBy('user.createdAt', 'DESC')
-    .skip(skip)
+    .skip(paginationDto.skip)
     .take(limit);
 
   // Filtres existants
@@ -385,11 +385,11 @@ async findAll(paginationDto: PaginationDto & any): Promise<PaginationResponseDto
   }
 
   async getUserActivities(id: string, paginationDto: PaginationDto): Promise<PaginationResponseDto<Activity>> {
-    const { page, limit, skip } = paginationDto;
+    const { page, limit } = paginationDto;
 
     const [activities, total] = await this.activitiesRepository.findAndCount({
       where: { participantId: id },
-      skip,
+      skip: paginationDto.skip,
       take: limit,
       order: {
         createdAt: 'DESC',
